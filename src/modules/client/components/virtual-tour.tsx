@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -12,7 +11,6 @@ import {
   ZoomIn,
   ZoomOut,
   Navigation,
-  Menu,
   X,
   ChevronLeft,
   ChevronRight,
@@ -54,7 +52,6 @@ export function VirtualTour({ open, onOpenChange }: VirtualTourProps) {
   const [panX, setPanX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-  const [showTourAreas, setShowTourAreas] = useState(true)
   const [activeTab, setActiveTab] = useState("event-venues")
   const tourRef = useRef<HTMLDivElement>(null)
 
@@ -609,56 +606,43 @@ export function VirtualTour({ open, onOpenChange }: VirtualTourProps) {
     resetView()
   }
 
-  const toggleTourAreas = () => {
-    setShowTourAreas(!showTourAreas)
-  }
-
   const closeTour = () => {
     onOpenChange(false)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0">
-        <div className="relative h-[80vh] overflow-hidden rounded-lg">
-          {/* Tour Header */}
-          <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/70 to-transparent p-4">
-            <DialogHeader className="text-white">
-              <DialogTitle className="flex items-center justify-between">
-                <span>Virtual Tour - {currentArea.name}</span>
-                <div className="flex items-center space-x-2">
-                  <Badge variant="secondary" className="bg-white/20 text-white">
-                    {currentAngle.name}
-                  </Badge>
-                  {currentArea.capacity && (
-                    <Badge variant="secondary" className="bg-blue-600/80 text-white">
-                      <Users className="w-3 h-3 mr-1" />
-                      {currentArea.capacity}
-                    </Badge>
-                  )}
-                </div>
-              </DialogTitle>
-              <DialogDescription className="text-white/90">{currentArea.description}</DialogDescription>
-            </DialogHeader>
+      <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 overflow-hidden flex flex-col md:flex-row gap-0 border-0 bg-black">
+        
+        {/* ========================================== */}
+        {/* LEFT COLUMN: 360 Panoramic View (Maximized) */}
+        {/* ========================================== */}
+        <div className="relative flex-1 bg-black overflow-hidden flex flex-col h-[50vh] md:h-auto">
+          
+          {/* Top Overlays */}
+          <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-6 pointer-events-none flex justify-between items-start">
+            <div className="text-white">
+              <h2 className="text-xl md:text-3xl font-bold">Virtual Tour - {currentArea.name}</h2>
+              <p className="text-xs md:text-base opacity-90 mt-1 max-w-xl">{currentArea.description}</p>
+            </div>
+            {/* Top Right Badges */}
+            <div className="flex flex-col items-end gap-2">
+              <Badge variant="secondary" className="bg-white/20 text-white backdrop-blur-sm border-0 hidden md:inline-flex">
+                {currentAngle.name}
+              </Badge>
+              {currentArea.capacity && (
+                <Badge variant="secondary" className="bg-blue-600/90 text-white backdrop-blur-sm border-0">
+                  <Users className="w-3 h-3 mr-1" />
+                  {currentArea.capacity}
+                </Badge>
+              )}
+            </div>
           </div>
 
-          {/* Close Tour Button - Transparent */}
-          <div className="absolute top-4 right-4 z-30">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={closeTour}
-              className="bg-black/30 hover:bg-black/50 text-white rounded-full h-8 w-8 p-0"
-              title="Close Virtual Tour"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Panoramic View */}
+          {/* Panoramic View Container */}
           <div
             ref={tourRef}
-            className="relative w-full h-full cursor-grab active:cursor-grabbing select-none"
+            className="absolute inset-0 w-full h-full cursor-grab active:cursor-grabbing select-none"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -672,25 +656,17 @@ export function VirtualTour({ open, onOpenChange }: VirtualTourProps) {
               backgroundPosition: `${panX}px center`,
               backgroundRepeat: "no-repeat",
             }}
-          >
-            {/* Navigation Instructions */}
-            <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-lg text-sm">
-              <div className="flex items-center space-x-2">
-                <Navigation className="w-4 h-4" />
-                <span>Drag to pan • Use controls to zoom • Switch views using thumbnails</span>
-              </div>
-            </div>
-          </div>
+          />
 
-          {/* Controls */}
+          {/* Controls (Zoom, Reset) */}
           <div className="absolute bottom-24 right-4 z-20 flex flex-col space-y-2">
-            <Button size="sm" variant="secondary" onClick={handleZoomIn} className="bg-white/90 hover:bg-white">
+            <Button size="sm" variant="secondary" onClick={handleZoomIn} className="bg-white/90 hover:bg-white shadow-md">
               <ZoomIn className="w-4 h-4" />
             </Button>
-            <Button size="sm" variant="secondary" onClick={handleZoomOut} className="bg-white/90 hover:bg-white">
+            <Button size="sm" variant="secondary" onClick={handleZoomOut} className="bg-white/90 hover:bg-white shadow-md">
               <ZoomOut className="w-4 h-4" />
             </Button>
-            <Button size="sm" variant="secondary" onClick={resetView} className="bg-white/90 hover:bg-white">
+            <Button size="sm" variant="secondary" onClick={resetView} className="bg-white/90 hover:bg-white shadow-md">
               <RotateCcw className="w-4 h-4" />
             </Button>
           </div>
@@ -701,200 +677,44 @@ export function VirtualTour({ open, onOpenChange }: VirtualTourProps) {
               size="sm"
               variant="secondary"
               onClick={prevAngle}
-              className="bg-white/90 hover:bg-white"
+              className="bg-white/90 hover:bg-white shadow-md"
               disabled={currentArea.angles.length <= 1}
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous View
+              <ChevronLeft className="w-4 h-4 md:mr-1" />
+              <span className="hidden md:inline">Previous</span>
             </Button>
             <Button
               size="sm"
               variant="secondary"
               onClick={nextAngle}
-              className="bg-white/90 hover:bg-white"
+              className="bg-white/90 hover:bg-white shadow-md"
               disabled={currentArea.angles.length <= 1}
             >
-              Next View
-              <ChevronRight className="w-4 h-4 ml-1" />
+              <span className="hidden md:inline">Next</span>
+              <ChevronRight className="w-4 h-4 md:ml-1" />
             </Button>
           </div>
 
-          {/* Tour Areas Toggle Button */}
-          <div className="absolute top-20 right-4 z-20">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={toggleTourAreas}
-              className="bg-white/90 hover:bg-white mb-2"
-              title={showTourAreas ? "Hide Tour Areas" : "Show Tour Areas"}
-            >
-              {showTourAreas ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </Button>
-          </div>
-
-          {/* Enhanced Tour Areas Panel with Tab Switcher */}
-          {showTourAreas && (
-            <div className="absolute top-32 right-4 z-20 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border max-w-sm w-80">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <div className="p-4 pb-0">
-                  <h4 className="font-semibold text-sm mb-3 flex items-center">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    Tour Areas
-                  </h4>
-                  <TabsList className="grid w-full grid-cols-2 mb-3">
-                    <TabsTrigger value="event-venues" className="text-xs">
-                      Event Venues
-                    </TabsTrigger>
-                    <TabsTrigger value="office-spaces" className="text-xs">
-                      Office Spaces
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <div className="max-h-80 overflow-y-auto">
-                  <TabsContent value="event-venues" className="mt-0 px-4 pb-4">
-                    <div className="space-y-1">
-                      {eventVenues.map((area, index) => {
-                        const globalIndex = tourAreas.findIndex((a) => a.id === area.id)
-                        return (
-                          <button
-                            key={area.id}
-                            onClick={() => switchArea(globalIndex)}
-                            className={`w-full text-left px-3 py-3 rounded-lg text-sm transition-all border ${
-                              globalIndex === currentAreaIndex
-                                ? "bg-blue-600 text-white font-medium border-blue-600 shadow-md"
-                                : "hover:bg-gray-100 text-gray-700 border-gray-200 hover:border-gray-300"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="font-medium">{area.name}</div>
-                                {area.capacity && (
-                                  <div
-                                    className={`text-xs mt-1 flex items-center ${
-                                      globalIndex === currentAreaIndex ? "text-blue-100" : "text-gray-500"
-                                    }`}
-                                  >
-                                    <Users className="w-3 h-3 mr-1" />
-                                    {area.capacity}
-                                  </div>
-                                )}
-                              </div>
-                              {globalIndex === currentAreaIndex && (
-                                <div className="w-2 h-2 bg-white rounded-full animate-pulse ml-2 mt-1" />
-                              )}
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="office-spaces" className="mt-0 px-4 pb-4">
-                    <div className="space-y-4">
-                      {/* Ground Floor Section */}
-                      <div>
-                        <h5 className="font-medium text-xs text-gray-600 mb-2 flex items-center">
-                          <Monitor className="w-3 h-3 mr-1" />
-                          Ground Floor (Rooms 1-8)
-                        </h5>
-                        <div className="space-y-1">
-                          {groundFloorOffices.map((area, index) => {
-                            const globalIndex = tourAreas.findIndex((a) => a.id === area.id)
-                            return (
-                              <button
-                                key={area.id}
-                                onClick={() => switchArea(globalIndex)}
-                                className={`w-full text-left px-3 py-2 rounded text-xs transition-all border ${
-                                  globalIndex === currentAreaIndex
-                                    ? "bg-blue-600 text-white font-medium border-blue-600"
-                                    : "hover:bg-gray-100 text-gray-700 border-gray-200"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="font-medium">{area.name}</div>
-                                    {area.capacity && (
-                                      <div
-                                        className={`text-xs mt-0.5 flex items-center ${
-                                          globalIndex === currentAreaIndex ? "text-blue-100" : "text-gray-500"
-                                        }`}
-                                      >
-                                        <Wifi className="w-2 h-2 mr-1" />
-                                        {area.capacity}
-                                      </div>
-                                    )}
-                                  </div>
-                                  {globalIndex === currentAreaIndex && (
-                                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                                  )}
-                                </div>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-
-                      {/* Second Floor Section */}
-                      <div>
-                        <h5 className="font-medium text-xs text-gray-600 mb-2 flex items-center">
-                          <Monitor className="w-3 h-3 mr-1" />
-                          Second Floor (Rooms 9-16)
-                        </h5>
-                        <div className="space-y-1">
-                          {secondFloorOffices.map((area, index) => {
-                            const globalIndex = tourAreas.findIndex((a) => a.id === area.id)
-                            return (
-                              <button
-                                key={area.id}
-                                onClick={() => switchArea(globalIndex)}
-                                className={`w-full text-left px-3 py-2 rounded text-xs transition-all border ${
-                                  globalIndex === currentAreaIndex
-                                    ? "bg-blue-600 text-white font-medium border-blue-600"
-                                    : "hover:bg-gray-100 text-gray-700 border-gray-200"
-                                }`}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="font-medium">{area.name}</div>
-                                    {area.capacity && (
-                                      <div
-                                        className={`text-xs mt-0.5 flex items-center ${
-                                          globalIndex === currentAreaIndex ? "text-blue-100" : "text-gray-500"
-                                        }`}
-                                      >
-                                        <Wifi className="w-2 h-2 mr-1" />
-                                        {area.capacity}
-                                      </div>
-                                    )}
-                                  </div>
-                                  {globalIndex === currentAreaIndex && (
-                                    <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                                  )}
-                                </div>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </TabsContent>
-                </div>
-              </Tabs>
+          {/* Navigation Indicator */}
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-md text-white px-4 py-2 rounded-full text-xs md:text-sm z-20 pointer-events-none whitespace-nowrap">
+            <div className="flex items-center space-x-2">
+              <Navigation className="w-4 h-4" />
+              <span className="hidden md:inline">Drag to pan • Use controls to zoom</span>
+              <span className="md:hidden">Drag to explore</span>
             </div>
-          )}
+          </div>
 
-          {/* Angle Thumbnails - Outside the toggle panel */}
+          {/* Thumbnails */}
           {currentArea.angles.length > 1 && (
-            <div className="absolute bottom-4 left-0 right-0 z-20 flex justify-center">
-              <div className="bg-black/50 backdrop-blur-sm rounded-lg p-2 flex space-x-2 overflow-x-auto">
+            <div className="absolute top-24 right-4 z-20 flex flex-col space-y-2 pointer-events-none md:top-auto md:bottom-6 md:left-4 md:right-4 md:flex-row md:justify-center">
+              <div className="bg-black/50 backdrop-blur-sm rounded-lg p-2 flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 overflow-auto pointer-events-auto">
                 {currentArea.angles.map((angle, angleIndex) => (
                   <button
                     key={angle.id}
                     onClick={() => switchAngle(angleIndex)}
                     className={`relative flex-shrink-0 rounded-md overflow-hidden transition-all ${
                       angleIndex === currentAngleIndex
-                        ? "ring-2 ring-blue-400 scale-110"
+                        ? "ring-2 ring-blue-400 scale-105"
                         : "opacity-70 hover:opacity-100 hover:scale-105"
                     }`}
                     title={angle.name}
@@ -916,33 +736,187 @@ export function VirtualTour({ open, onOpenChange }: VirtualTourProps) {
           )}
         </div>
 
-        {/* Enhanced Tour Info Footer */}
-        <div className="p-4 border-t bg-gray-50">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 mb-2">
-                Experience our venue with panoramic views from different angles
-              </p>
+        {/* ========================================== */}
+        {/* RIGHT COLUMN: Tour Areas & Action Buttons  */}
+        {/* ========================================== */}
+        <div className="w-full md:w-[400px] lg:w-[450px] flex-shrink-0 flex flex-col bg-slate-50 border-t md:border-t-0 md:border-l border-gray-200 overflow-hidden">
+          
+          {/* Header with Close Button */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0">
+            <h3 className="font-bold text-lg text-gray-800 flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+              Tour Areas
+            </h3>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={closeTour}
+              className="text-gray-500 hover:bg-gray-100 hover:text-gray-900 rounded-full h-8 w-8 p-0"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Scrollable Tour Areas Tabs */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4">
+                <TabsTrigger value="event-venues" className="text-xs">
+                  Event Venues
+                </TabsTrigger>
+                <TabsTrigger value="office-spaces" className="text-xs">
+                  Office Spaces
+                </TabsTrigger>
+              </TabsList>
+
+              {/* EVENT VENUES TAB */}
+              <TabsContent value="event-venues" className="mt-0 space-y-2">
+                {eventVenues.map((area) => {
+                  const globalIndex = tourAreas.findIndex((a) => a.id === area.id)
+                  return (
+                    <button
+                      key={area.id}
+                      onClick={() => switchArea(globalIndex)}
+                      className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                        globalIndex === currentAreaIndex
+                          ? "bg-blue-50 border-blue-600 shadow-sm"
+                          : "bg-white hover:bg-gray-50 border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className={`font-medium ${globalIndex === currentAreaIndex ? "text-blue-700" : "text-gray-900"}`}>
+                            {area.name}
+                          </div>
+                          {area.capacity && (
+                            <div className="text-xs mt-1 flex items-center text-gray-500">
+                              <Users className="w-3 h-3 mr-1" />
+                              {area.capacity}
+                            </div>
+                          )}
+                        </div>
+                        {globalIndex === currentAreaIndex && (
+                          <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse mt-1.5" />
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </TabsContent>
+
+              {/* OFFICE SPACES TAB */}
+              <TabsContent value="office-spaces" className="mt-0 space-y-6">
+                
+                {/* Ground Floor */}
+                <div>
+                  <h5 className="font-semibold text-xs text-gray-500 uppercase tracking-wider mb-3 flex items-center">
+                    <Monitor className="w-3 h-3 mr-1" />
+                    Ground Floor
+                  </h5>
+                  <div className="space-y-2">
+                    {groundFloorOffices.map((area) => {
+                      const globalIndex = tourAreas.findIndex((a) => a.id === area.id)
+                      return (
+                        <button
+                          key={area.id}
+                          onClick={() => switchArea(globalIndex)}
+                          className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                            globalIndex === currentAreaIndex
+                              ? "bg-blue-50 border-blue-600 shadow-sm"
+                              : "bg-white hover:bg-gray-50 border-gray-200"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className={`font-medium text-sm ${globalIndex === currentAreaIndex ? "text-blue-700" : "text-gray-900"}`}>
+                                {area.name}
+                              </div>
+                              {area.capacity && (
+                                <div className="text-xs mt-1 flex items-center text-gray-500">
+                                  <Wifi className="w-3 h-3 mr-1" />
+                                  {area.capacity}
+                                </div>
+                              )}
+                            </div>
+                            {globalIndex === currentAreaIndex && (
+                              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse mt-1.5" />
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Second Floor */}
+                <div>
+                  <h5 className="font-semibold text-xs text-gray-500 uppercase tracking-wider mb-3 flex items-center">
+                    <Monitor className="w-3 h-3 mr-1" />
+                    Second Floor
+                  </h5>
+                  <div className="space-y-2">
+                    {secondFloorOffices.map((area) => {
+                      const globalIndex = tourAreas.findIndex((a) => a.id === area.id)
+                      return (
+                        <button
+                          key={area.id}
+                          onClick={() => switchArea(globalIndex)}
+                          className={`w-full text-left px-4 py-3 rounded-xl border transition-all ${
+                            globalIndex === currentAreaIndex
+                              ? "bg-blue-50 border-blue-600 shadow-sm"
+                              : "bg-white hover:bg-gray-50 border-gray-200"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className={`font-medium text-sm ${globalIndex === currentAreaIndex ? "text-blue-700" : "text-gray-900"}`}>
+                                {area.name}
+                              </div>
+                              {area.capacity && (
+                                <div className="text-xs mt-1 flex items-center text-gray-500">
+                                  <Wifi className="w-3 h-3 mr-1" />
+                                  {area.capacity}
+                                </div>
+                              )}
+                            </div>
+                            {globalIndex === currentAreaIndex && (
+                              <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse mt-1.5" />
+                            )}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Bottom Footer: Amenities & Buttons */}
+          <div className="p-5 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2 font-medium">Amenities included:</p>
               {currentArea.amenities && (
-                <div className="flex flex-wrap gap-1">
-                  {currentArea.amenities.slice(0, 4).map((amenity, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
+                <div className="flex flex-wrap gap-1.5">
+                  {currentArea.amenities.map((amenity, index) => (
+                    <Badge key={index} variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-200 font-normal">
                       {amenity}
                     </Badge>
                   ))}
-                  {currentArea.amenities.length > 4 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{currentArea.amenities.length - 4} more
-                    </Badge>
-                  )}
                 </div>
               )}
             </div>
-            <div className="flex space-x-2 ml-4">
-              <Button variant="outline" onClick={closeTour}>
-                Close Tour
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={closeTour}
+                className="flex-1 py-5 rounded-lg"
+              >
+                Close
               </Button>
-              <Button
+              <Button 
                 onClick={() => {
                   closeTour()
                   toast({
@@ -950,11 +924,13 @@ export function VirtualTour({ open, onOpenChange }: VirtualTourProps) {
                     description: `Sign in to reserve ${currentArea.name} for your event!`,
                   })
                 }}
+                className="flex-1 py-5 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white"
               >
                 Sign In to Book
               </Button>
             </div>
           </div>
+
         </div>
       </DialogContent>
     </Dialog>

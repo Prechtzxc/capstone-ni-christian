@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { MainLayout } from "@/components/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -260,134 +259,132 @@ export default function PaymentsPage() {
   }
 
   return (
-    <MainLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Payment Verification</h1>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
-              <FileImage className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{allProofs.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pendingProofs.length}</div>
-              {pendingProofs.length > 0 && (
-                <Badge className="bg-yellow-100 text-yellow-800 mt-2">Needs Attention</Badge>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Verified</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{verifiedProofs.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-              <XCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{rejectedProofs.length}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Payment Proofs Tabs */}
-        <Tabs defaultValue="pending" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="pending" className="flex items-center space-x-2">
-              <Clock className="h-4 w-4" />
-              <span>Pending ({pendingProofs.length})</span>
-            </TabsTrigger>
-            <TabsTrigger value="verified">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Verified ({verifiedProofs.length})
-            </TabsTrigger>
-            <TabsTrigger value="rejected">
-              <XCircle className="h-4 w-4 mr-2" />
-              Rejected ({rejectedProofs.length})
-            </TabsTrigger>
-            <TabsTrigger value="all">All ({allProofs.length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending">
-            <div className="space-y-4">
-              {pendingProofs.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500">No pending payment proofs</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                pendingProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="verified">
-            <div className="space-y-4">
-              {verifiedProofs.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500">No verified payments yet</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                verifiedProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="rejected">
-            <div className="space-y-4">
-              {rejectedProofs.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <XCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500">No rejected payments</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                rejectedProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="all">
-            <div className="space-y-4">
-              {allProofs.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
-                    <FileImage className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500">No payment proofs submitted yet</p>
-                  </CardContent>
-                </Card>
-              ) : (
-                allProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Payment Verification</h1>
       </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total Submissions</CardTitle>
+            <FileImage className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{allProofs.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingProofs.length}</div>
+            {pendingProofs.length > 0 && (
+              <Badge className="bg-yellow-100 text-yellow-800 mt-2">Needs Attention</Badge>
+            )} {/* <--- IDAGDAG MO ITO */}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Verified</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{verifiedProofs.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+            <XCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{rejectedProofs.length}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Payment Proofs Tabs */}
+      <Tabs defaultValue="pending" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="pending" className="flex items-center space-x-2">
+            <Clock className="h-4 w-4" />
+            <span>Pending ({pendingProofs.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="verified">
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Verified ({verifiedProofs.length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            <XCircle className="h-4 w-4 mr-2" />
+            Rejected ({rejectedProofs.length})
+          </TabsTrigger>
+          <TabsTrigger value="all">All ({allProofs.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          <div className="space-y-4">
+            {pendingProofs.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Clock className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">No pending payment proofs</p>
+                </CardContent>
+              </Card>
+            ) : (
+              pendingProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="verified">
+          <div className="space-y-4">
+            {verifiedProofs.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <CheckCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">No verified payments yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              verifiedProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rejected">
+          <div className="space-y-4">
+            {rejectedProofs.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <XCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">No rejected payments</p>
+                </CardContent>
+              </Card>
+            ) : (
+              rejectedProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="all">
+          <div className="space-y-4">
+            {allProofs.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <FileImage className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-500">No payment proofs submitted yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              allProofs.map((proof) => <PaymentProofCard key={proof.id} proof={proof} />)
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Review Dialog */}
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
@@ -446,6 +443,6 @@ export default function PaymentsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </MainLayout>
+    </div>
   )
 }

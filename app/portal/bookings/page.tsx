@@ -7,7 +7,7 @@ import { useBookings } from "@/components/booking-context"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Plus, Clock, Users, MoveHorizontal } from "lucide-react"
+import { Calendar, Plus, Clock, Users, MoveHorizontal, X } from "lucide-react"
 import { ReserveDialog } from "@/components/reserve-dialog"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -150,12 +150,39 @@ export default function BookingsPage() {
       </Card>
 
       <Dialog open={showVenueModal} onOpenChange={setShowVenueModal}>
-        <DialogContent className="sm:max-w-[1100px] p-0 overflow-hidden border-none bg-black text-white shadow-2xl select-none">
+        {/* ========================================================== */}
+        {/* FIX: Added !max-w-[1200px] to force the modal to be wide   */}
+        {/* Added [&>button]:hidden to remove shadcn's default X mark */}
+        {/* ========================================================== */}
+        <DialogContent className="!max-w-[1200px] w-[95vw] h-[90vh] p-0 overflow-hidden flex flex-col md:flex-row gap-0 border-0 bg-black [&>button]:hidden shadow-2xl">
           
           <DialogTitle className="sr-only">Virtual Tour and Venue Selection</DialogTitle>
           <DialogDescription className="sr-only">Take a 360 virtual tour of our venues and select one to book.</DialogDescription>
 
-          <div className="relative h-[600px] w-full bg-slate-900 overflow-hidden">
+          {/* ========================================== */}
+          {/* LEFT COLUMN: 360 Panoramic View            */}
+          {/* ========================================== */}
+          <div className="relative flex-1 bg-slate-900 overflow-hidden flex flex-col h-[50vh] md:h-auto">
+            {/* Top Overlays */}
+            <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent p-6 pointer-events-none flex justify-between items-start">
+              <div className="text-white pr-4">
+                <h2 className="text-2xl md:text-3xl font-bold drop-shadow-md">Virtual Tour - {activeVenueData.name}</h2>
+                <p className="text-sm md:text-base opacity-90 mt-1 max-w-xl drop-shadow-md">{activeVenueData.description}</p>
+              </div>
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <Badge className="bg-white/20 text-white backdrop-blur-md border border-white/30 hidden md:inline-flex px-3 py-1">
+                  360° Panoramic View
+                </Badge>
+                <Badge className="bg-amber-600 text-white border-0 shadow-sm px-3 py-1">
+                  <Users className="w-3 h-3 mr-1" /> Up to {activeVenueData.capacity}
+                </Badge>
+                <Badge className="bg-green-600 text-white border-0 shadow-sm px-3 py-1">
+                  {activeVenueData.price}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Panoramic View Container */}
             <div 
               className={`absolute inset-0 w-full h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
               onMouseDown={(e) => onDragStart(e.clientX)}
@@ -172,109 +199,141 @@ export default function BookingsPage() {
                 backgroundRepeat: 'repeat-x', 
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80 pointer-events-none" />
-            <div className="absolute top-6 left-6 pr-[350px] pointer-events-none">
-              <h2 className="text-2xl font-bold text-white drop-shadow-md">Virtual Tour - {activeVenueData.name}</h2>
-              <p className="text-sm text-gray-200 mt-1 drop-shadow-md">{activeVenueData.description}</p>
-            </div>
-            <div className="absolute top-6 right-12 flex items-center gap-2 pointer-events-none">
-              <Badge className="bg-white/20 text-white backdrop-blur-md border border-white/30">
-                360° Panoramic View
-              </Badge>
-              <Badge className="bg-amber-600 text-white border-0 shadow-sm">
-                <Users className="w-3 h-3 mr-1" /> Up to {activeVenueData.capacity} guests
-              </Badge>
-              <Badge className="bg-green-600 text-white border-0 shadow-sm">
-                {activeVenueData.price}
-              </Badge>
-            </div>
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/90 text-sm font-medium tracking-wide flex items-center gap-2 drop-shadow-md pointer-events-none">
-              <MoveHorizontal className="w-4 h-4" />
-              Drag to explore • Auto-rotating
-            </div>
-            <div 
-              className="absolute right-6 top-20 bottom-8 w-[340px] bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden text-slate-900 border border-gray-100"
-              onMouseDown={(e) => e.stopPropagation()} 
-              onTouchStart={(e) => e.stopPropagation()}
-            >
-              <div className="p-4 border-b font-semibold flex items-center gap-2 bg-gray-50/50">
-                <Calendar className="w-4 h-4 text-amber-600" /> Tour Areas
+
+            {/* Navigation Indicator */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-md text-white px-5 py-2.5 rounded-full text-xs md:text-sm z-20 pointer-events-none whitespace-nowrap shadow-lg">
+              <div className="flex items-center space-x-2">
+                <MoveHorizontal className="w-4 h-4" />
+                <span>Drag to explore • Auto-rotating</span>
               </div>
-              <Tabs className="flex-1 flex flex-col overflow-hidden" defaultValue="events">
-                <div className="p-3 pb-0">
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-100">
-                    <TabsTrigger value="events">Event Venues</TabsTrigger>
-                    <TabsTrigger value="offices">Office Spaces</TabsTrigger>
-                  </TabsList>
-                </div>
-                <TabsContent className="flex-1 overflow-y-auto p-3 space-y-2 m-0 custom-scrollbar" value="events">
-                  {eventVenues.map((venue) => (
-                    <div 
-                      key={venue.id} 
-                      onClick={() => setSelectedVenue(venue.id)}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                        selectedVenue === venue.id 
-                          ? 'border-amber-600 bg-amber-50 ring-1 ring-amber-600' 
-                          : 'border-gray-200 hover:border-amber-300 bg-white'
-                      }`}
-                    >
-                      <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-amber-700' : 'text-gray-900'}`}>
-                        {venue.name}
-                      </h4>
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <span className="text-gray-500 flex items-center">
-                          <Users className="w-3 h-3 mr-1" /> Up to {venue.capacity}
-                        </span>
-                        <span className="text-green-600 font-medium">{venue.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </TabsContent>
-                <TabsContent className="flex-1 overflow-y-auto p-3 space-y-2 m-0 custom-scrollbar" value="offices">
-                  {officeSpaces.map((venue) => (
-                    <div 
-                      key={venue.id} 
-                      onClick={() => setSelectedVenue(venue.id)}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all ${
-                        selectedVenue === venue.id 
-                          ? 'border-amber-600 bg-amber-50 ring-1 ring-amber-600' 
-                          : 'border-gray-200 hover:border-amber-300 bg-white'
-                      }`}
-                    >
-                      <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-amber-700' : 'text-gray-900'}`}>
-                        {venue.name}
-                      </h4>
-                      <div className="flex justify-between items-center mt-2 text-xs">
-                        <span className="text-gray-500 flex items-center">
-                          <Users className="w-3 h-3 mr-1" /> Up to {venue.capacity}
-                        </span>
-                        <span className="text-green-600 font-medium">{venue.price}</span>
-                      </div>
-                    </div>
-                  ))}
-                </TabsContent>
-              </Tabs>
             </div>
           </div>
-          <div className="bg-white p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-slate-900 z-10 relative">
-            <div>
-              <p className="text-sm text-gray-600 mb-2">Experience our venue with panoramic views from different angles</p>
-              <div className="flex flex-wrap gap-2">
-                {activeVenueData.amenities.map(amenity => (
-                  <Badge className="text-gray-600 font-normal rounded-full bg-gray-50" key={amenity} variant="outline">
-                    {amenity}
-                  </Badge>
+
+          {/* ========================================== */}
+          {/* RIGHT COLUMN: Tour Areas & Action Buttons  */}
+          {/* ========================================== */}
+          <div className="w-full md:w-[400px] lg:w-[450px] flex-shrink-0 flex flex-col bg-slate-50 border-t md:border-t-0 md:border-l border-gray-200 overflow-hidden">
+            
+            {/* Header with Close Button */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0">
+              <h3 className="font-bold text-lg text-gray-800 flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-amber-600" />
+                Tour Areas
+              </h3>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowVenueModal(false)}
+                className="text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-full h-8 w-8 p-0 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Tabs List */}
+            <Tabs className="flex-1 flex flex-col overflow-hidden" defaultValue="events">
+              <div className="p-4 pb-0 bg-white">
+                <TabsList className="grid w-full grid-cols-2 bg-gray-100">
+                  <TabsTrigger value="events">Event Venues</TabsTrigger>
+                  <TabsTrigger value="offices">Office Spaces</TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* Event Venues Content */}
+              <TabsContent className="flex-1 overflow-y-auto p-4 space-y-3 m-0 custom-scrollbar" value="events">
+                {eventVenues.map((venue) => (
+                  <div 
+                    key={venue.id} 
+                    onClick={() => setSelectedVenue(venue.id)}
+                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
+                      selectedVenue === venue.id 
+                        ? 'border-amber-600 bg-amber-50 ring-1 ring-amber-600 shadow-sm' 
+                        : 'border-gray-200 hover:border-amber-300 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-amber-700' : 'text-gray-900'}`}>
+                          {venue.name}
+                        </h4>
+                        <div className="text-xs mt-1 flex items-center text-gray-500">
+                          <Users className="w-3 h-3 mr-1" /> Up to {venue.capacity}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-600 font-medium text-xs block">{venue.price}</span>
+                        {selectedVenue === venue.id && (
+                          <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse mt-2 ml-auto" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
+              </TabsContent>
+
+              {/* Office Spaces Content */}
+              <TabsContent className="flex-1 overflow-y-auto p-4 space-y-3 m-0 custom-scrollbar" value="offices">
+                {officeSpaces.map((venue) => (
+                  <div 
+                    key={venue.id} 
+                    onClick={() => setSelectedVenue(venue.id)}
+                    className={`p-4 border rounded-xl cursor-pointer transition-all ${
+                      selectedVenue === venue.id 
+                        ? 'border-amber-600 bg-amber-50 ring-1 ring-amber-600 shadow-sm' 
+                        : 'border-gray-200 hover:border-amber-300 bg-white hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-amber-700' : 'text-gray-900'}`}>
+                          {venue.name}
+                        </h4>
+                        <div className="text-xs mt-1 flex items-center text-gray-500">
+                          <Users className="w-3 h-3 mr-1" /> Up to {venue.capacity}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-green-600 font-medium text-xs block">{venue.price}</span>
+                        {selectedVenue === venue.id && (
+                          <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse mt-2 ml-auto" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </TabsContent>
+            </Tabs>
+
+            {/* Bottom Footer: Amenities & Buttons */}
+            <div className="p-5 bg-white border-t border-gray-200 shrink-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2 font-medium">Amenities included:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeVenueData.amenities.map((amenity, index) => (
+                    <Badge key={index} variant="secondary" className="bg-gray-100 text-gray-600 hover:bg-gray-200 font-normal">
+                      {amenity}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowVenueModal(false)}
+                  className="flex-1 py-6 rounded-xl border-gray-300 font-medium hover:bg-gray-50 text-slate-700"
+                >
+                  Close Tour
+                </Button>
+                <Button 
+                  onClick={handleProceedToBooking}
+                  className="flex-1 py-6 rounded-xl bg-[#0f172a] hover:bg-slate-800 text-white font-medium shadow-md"
+                >
+                  Book Now
+                </Button>
               </div>
             </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <Button onClick={() => setShowVenueModal(false)} variant="outline">
-                Close Tour
-              </Button>
-              <Button className="bg-slate-900 text-white hover:bg-slate-800" onClick={handleProceedToBooking}>
-                Book Now
-              </Button>
-            </div>
+
           </div>
         </DialogContent>
       </Dialog>
