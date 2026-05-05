@@ -21,6 +21,9 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { usePaymentProof } from "@/components/payment-proof-context"
 
+// IN-IMPORT NATIN YUNG BOOKING CONTEXT DITO BAKS!
+import { useBookings } from "@/components/booking-context"
+
 import { useAuth } from "../auth/auth-context"
 import { useChat } from "../contexts/chat-context"
 
@@ -35,8 +38,11 @@ export function MainLayout({ children }: MainLayoutProps) {
   
   const { logout, user, isLoading } = useAuth() 
   const { getPendingPaymentProofs } = usePaymentProof()
-  
   const { messages, unreadCount } = useChat()
+
+  // KINUHA NATIN YUNG BOOKINGS PARA MA-CHECK KUNG MAY PENDING
+  const { bookings } = useBookings()
+  const hasPendingBookings = bookings?.some((b: any) => b.status === "pending")
 
   const pendingPayments = getPendingPaymentProofs().length
 
@@ -52,7 +58,13 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   const menuItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Booking Management", href: "/dashboard/bookings", icon: BookOpen },
+    { 
+      name: "Booking Management", 
+      href: "/dashboard/bookings", 
+      icon: BookOpen,
+      // DINAGDAG NATIN TONG PING BADGE PARA SA PENDING BOOKINGS
+      hasPingBadge: hasPendingBookings 
+    },
     { 
       name: "Customer Chat", 
       href: "/dashboard/chat", 
@@ -78,7 +90,6 @@ export function MainLayout({ children }: MainLayoutProps) {
       description: "You have been successfully logged out",
     })
     
-    // THE REAL FIX: TINANGGAL NA NATIN ANG localStorage.clear() DITO!
     // Safe remove na lang ng temporary chat IDs para hindi ma-nuke ang database.
     localStorage.removeItem("mock_client_id")
     localStorage.removeItem("mock_guest_id")
@@ -137,7 +148,13 @@ export function MainLayout({ children }: MainLayoutProps) {
                   {item.name}
                 </div>
                 
-                {item.hasDotBadge ? (
+                {/* DITO NATIN NILAGAY YUNG LOGIC PARA SA PING EFFECT */}
+                {item.hasPingBadge ? (
+                  <span className="relative flex h-2.5 w-2.5 ml-auto">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                  </span>
+                ) : item.hasDotBadge ? (
                   <span className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-sm ml-auto"></span>
                 ) : item.badge ? (
                   <Badge className="bg-red-500 text-white border-none text-[10px] h-5 min-w-[20px] flex items-center justify-center ml-auto">
