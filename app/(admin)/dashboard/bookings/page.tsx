@@ -1,207 +1,440 @@
 "use client"
 
-import * as React from "react"
-import { useState, useMemo } from "react"
-import { format } from "date-fns"
+import React, { useState } from "react"
 import { useBookings } from "@/components/booking-context"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar } from "@/components/ui/calendar"
-import { 
-  CalendarDays, Clock, XCircle, Search, 
-  Inbox, Users, FilterX, CheckSquare, Sparkles, AlertCircle, BarChart3, CheckCircle2, Filter
-} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { 
+  Search, 
+  Calendar as CalendarIcon, 
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  AlertCircle,
+  History,
+  XCircle,
+  MapPin
+} from "lucide-react"
 
-export default function BookingManagementPage() {
-  const { bookings, updateBooking } = useBookings()
+export default function AdminBookingsPage() {
+  const { bookings, updateBookingStatus } = useBookings()
   const { toast } = useToast()
   
-  const [activeTab, setActiveTab] = useState("pending")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [eventTypeFilter, setEventTypeFilter] = useState("all")
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState("approved") // Pinalitan ko ng approved as default since nandyan bookings mo
+  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedVenue, setSelectedVenue] = useState<string>("all")
 
-  // CALENDAR LOGIC (RED = FULL, AMBER = PARTIAL)
-  const { fullyBookedDates, partiallyBookedDates } = useMemo(() => {
-    const fully: Date[] = []
-    const partially: Date[] = []
-    const activeBookings = (bookings || []).filter((b: any) => b.status !== "declined")
-    const bookingsByDate: Record<string, any[]> = {}
+  // TOTOONG DATA GALING SA CONTEXT
+  const allBookings = bookings || []
+
+  // SUPER SAFE VENUE MATCHER (Na-fix na yung fallback bug!)
+  const checkVenueMatch = (b: any, selected: string) => {
+    if (selected === "all") return true;
     
-    activeBookings.forEach((b: any) => {
-      if (!bookingsByDate[b.date]) bookingsByDate[b.date] = []
-      bookingsByDate[b.date].push(b)
-    })
+    // DITO ANG FIX: Dapat alam din ng filter yung fallback text na nakikita mo sa UI
+    const uiVenue = b.venue || b.venueName || "Conference Hall";
+    const uiEvent = b.eventName || "Venue Booking";
+    
+    const combinedString = `${uiVenue} ${uiEvent}`.toLowerCase();
+    return combinedString.includes(selected.toLowerCase());
+  }
 
-    Object.keys(bookingsByDate).forEach(dateStr => {
-      const dayBookings = bookingsByDate[dateStr]
-      let totalHoursBooked = 0
-      dayBookings.forEach((b: any) => {
-        if (b.startTime && b.endTime) {
-          const [sH, sM] = b.startTime.split(':').map(Number)
-          const [eH, eM] = b.endTime.split(':').map(Number)
-          totalHoursBooked += (eH + eM / 60) - (sH + sM / 60)
-        } else { totalHoursBooked += 4 }
-      });
-      const parsedDate = new Date(dateStr)
-      if (14 - totalHoursBooked < 6) fully.push(parsedDate)
-      else partially.push(parsedDate)
-    })
-    return { fullyBookedDates: fully, partiallyBookedDates: partially }
-  }, [bookings])
+  // FILTER LOGIC PARA SA LIST AT CALENDAR
+  const filteredBookings = allBookings.filter(b => {
+    const status = b.status?.toLowerCase() || "pending"
+    const matchStatus = activeTab === "approved" 
+      ? (status === "confirmed" || status === "approved") 
+      : status === activeTab;
+      
+    const matchVenue = checkVenueMatch(b, selectedVenue);
 
-  // FILTERING
-  const filteredBookings = (bookings || []).filter((booking: any) => {
-    const matchesTab = booking.status === activeTab
-    const matchesSearch = booking.contactName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         booking.eventName?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesDate = selectedDate ? booking.date === format(selectedDate, "MMMM d, yyyy") : true
-    const matchesEvent = eventTypeFilter === "all" || booking.eventName?.toLowerCase().includes(eventTypeFilter.toLowerCase())
-    return matchesTab && matchesSearch && matchesDate && matchesEvent
+    return matchStatus && matchVenue;
   })
 
-  const pendingCount = (bookings || []).filter((b: any) => b.status === "pending").length
-  const approvedCount = (bookings || []).filter((b: any) => b.status === "approved").length
-  const completedCount = (bookings || []).filter((b: any) => b.status === "completed").length
+  // STATUS COUNTERS (Filtered by venue)
+  const pendingCount = allBookings.filter(b => (b.status === "pending" || !b.status) && checkVenueMatch(b, selectedVenue)).length
+  const approvedCount = allBookings.filter(b => (b.status === "approved" || b.status === "confirmed") && checkVenueMatch(b, selectedVenue)).length
+  const completedCount = allBookings.filter(b => b.status === "completed" && checkVenueMatch(b, selectedVenue)).length
 
-  // ACTION HANDLER
-  const handleUpdateStatus = (id: string, newStatus: string, actionName: string) => {
-    if (updateBooking) {
-      updateBooking(id, { status: newStatus })
-      toast({
-        title: `Booking ${actionName}`,
-        description: `Marked as ${newStatus}.`,
-        variant: newStatus === "declined" ? "destructive" : "default",
+  // STATUS UPDATE HANDLER
+  const handleUpdateStatus = (id: string, newStatus: string) => {
+    if (updateBookingStatus) {
+      updateBookingStatus(id, newStatus)
+      toast({ 
+        title: "Status Updated", 
+        description: `Booking has been marked as ${newStatus}.` 
       })
     }
   }
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-500 max-w-full overflow-hidden pb-10">
+  // CALENDAR NAVIGATION LOGIC
+  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
+  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  
+  const emptySlots = Array.from({ length: firstDayOfMonth }).map((_, i) => null);
+  const days = Array.from({ length: daysInMonth }).map((_, i) => i + 1);
+
+  // 6-HOUR GAP CALCULATION PARA SA ADMIN CALENDAR
+  const getDayStatus = (day: number) => {
+    if (selectedVenue === "all") return "none";
+
+    const dayBookings = allBookings.filter(b => {
+      if (!b.date) return false;
       
-      {/* TOP: STATS + MINI CALENDAR */}
-      <div className="grid grid-cols-1 xl:grid-cols-[1fr_260px] gap-6 w-full items-start">
+      try {
+        const bookingDate = new Date(b.date);
+        const isSameDate = 
+          bookingDate.getFullYear() === year && 
+          bookingDate.getMonth() === month && 
+          bookingDate.getDate() === day;
         
-        <div className="flex flex-col gap-6 w-full">
-          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Booking Management</h1>
-            <p className="text-sm text-slate-500 mt-1">Review and manage client reservations.</p>
-          </div>
+        const isValidStatus = ["pending", "approved", "confirmed", "completed"].includes(b.status?.toLowerCase() || "pending");
+        const matchVenue = checkVenueMatch(b, selectedVenue);
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card className="bg-white border-slate-100 shadow-sm rounded-2xl">
-              <CardContent className="p-4 flex flex-col gap-2">
-                <div className="p-2 bg-amber-50 border border-amber-100 rounded-lg w-fit"><AlertCircle className="w-4 h-4 text-amber-600" /></div>
-                <div><p className="text-[10px] font-bold text-slate-500 uppercase">Action Needed</p><h4 className="text-2xl font-black text-slate-900">{pendingCount} <span className="text-xs font-medium text-slate-400">Pending</span></h4></div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-slate-100 shadow-sm rounded-2xl">
-              <CardContent className="p-4 flex flex-col gap-2">
-                <div className="p-2 bg-emerald-50 border border-emerald-100 rounded-lg w-fit"><CalendarDays className="w-4 h-4 text-emerald-600" /></div>
-                <div><p className="text-[10px] font-bold text-slate-500 uppercase">Upcoming</p><h4 className="text-2xl font-black text-slate-900">{approvedCount} <span className="text-xs font-medium text-slate-400">Approved</span></h4></div>
-              </CardContent>
-            </Card>
-            <Card className="bg-white border-slate-100 shadow-sm rounded-2xl">
-              <CardContent className="p-4 flex flex-col gap-2">
-                <div className="p-2 bg-blue-50 border border-blue-100 rounded-lg w-fit"><Sparkles className="w-4 h-4 text-blue-600" /></div>
-                <div><p className="text-[10px] font-bold text-slate-500 uppercase">Success</p><h4 className="text-2xl font-black text-slate-900">{completedCount} <span className="text-xs font-medium text-slate-400">Done</span></h4></div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        return isSameDate && isValidStatus && matchVenue;
+      } catch (e) {
+        return false;
+      }
+    });
 
-        {/* ULTRA COMPACT CALENDAR */}
-        <div className="w-full shrink-0">
-          <Card className="border-slate-200 shadow-sm bg-white rounded-2xl overflow-hidden">
-            <CardHeader className="border-b border-slate-50 bg-slate-50/50 py-2.5 px-3">
-              <CardTitle className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5"><BarChart3 className="w-3 h-3 text-indigo-600" /> Availability</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 flex flex-col items-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                modifiers={{ fullyBooked: fullyBookedDates, partiallyBooked: partiallyBookedDates }}
-                modifiersClassNames={{
-                  fullyBooked: "bg-red-500 text-white font-bold rounded-md",
-                  partiallyBooked: "bg-amber-400 text-white font-bold rounded-md"
-                }}
-                classNames={{
-                  months: "w-full",
-                  month: "space-y-1 w-full",
-                  caption: "flex justify-center py-1 relative items-center mb-1",
-                  caption_label: "text-[12px] font-bold text-slate-900",
-                  nav: "flex items-center",
-                  nav_button: "h-5 w-5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded flex items-center justify-center absolute top-1",
-                  nav_button_previous: "left-0",
-                  nav_button_next: "right-0",
-                  table: "w-full border-collapse",
-                  head_row: "flex justify-between",
-                  head_cell: "text-slate-400 w-6 font-bold text-[8px] uppercase text-center",
-                  row: "flex w-full mt-1 justify-between",
-                  cell: "h-6 w-6 text-center text-[10px] p-0 relative",
-                  day: "h-6 w-6 p-0 font-medium text-slate-700 hover:bg-indigo-50 rounded flex items-center justify-center mx-auto",
-                  day_selected: "bg-indigo-600 text-white font-bold",
-                  day_today: "bg-slate-100 text-slate-900",
-                  day_outside: "text-slate-300 opacity-50",
-                }}
-              />
-              <div className="flex flex-col w-full gap-1 mt-3 pt-2 border-t border-slate-100 text-[9px] font-bold uppercase text-slate-500 tracking-tighter">
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-red-500"></div><span>Full</span></div>
-                <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-amber-400"></div><span>Partial</span></div>
+    if (dayBookings.length === 0) return "none";
+
+    const opStart = 8;  
+    const opEnd = 22;   
+    const minHoursRequired = 6; 
+
+    const parseTimeStr = (timeStr: string) => {
+      try {
+        const cleanStr = timeStr.trim().toUpperCase();
+        const isPM = cleanStr.includes('PM');
+        const isAM = cleanStr.includes('AM');
+        const timeMatch = cleanStr.match(/(\d{1,2}):(\d{2})/);
+        if (!timeMatch) return 0;
+        
+        let hours = parseInt(timeMatch[1], 10);
+        let minutes = parseInt(timeMatch[2], 10);
+        
+        if (isPM && hours !== 12) hours += 12;
+        if (isAM && hours === 12) hours = 0;
+        
+        return hours + (minutes / 60);
+      } catch(e) {
+        return 0;
+      }
+    };
+
+    const intervals = dayBookings.map(b => {
+      if (!b.time) return { start: 0, end: 0 };
+      const parts = b.time.includes('-') ? b.time.split('-') : b.time.split(/to/i);
+      if (parts.length < 2) return { start: 0, end: 0 };
+      return {
+        start: parseTimeStr(parts[0]),
+        end: parseTimeStr(parts[1])
+      };
+    }).filter(i => i.start !== i.end).sort((a, b) => a.start - b.start);
+
+    let maxGap = 0;
+    let currentTime = opStart;
+
+    for (const interval of intervals) {
+      if (interval.start > currentTime) {
+        const gap = interval.start - currentTime;
+        if (gap > maxGap) maxGap = gap;
+      }
+      if (interval.end > currentTime) {
+        currentTime = interval.end;
+      }
+    }
+
+    if (opEnd > currentTime) {
+      const gap = opEnd - currentTime;
+      if (gap > maxGap) maxGap = gap;
+    }
+
+    if (maxGap < minHoursRequired) return "full";
+    return "partial";
+  }
+
+  return (
+    <div className="w-full p-6 lg:p-8 space-y-6 bg-gray-50/50 min-h-screen animate-in fade-in duration-500">
+      
+      {/* HEADER SECTION */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-4xl font-black text-slate-900 tracking-tight">Booking Management</h1>
+        <p className="text-slate-500 font-medium">Review and manage client reservations.</p>
+      </div>
+
+      {/* STATS CARDS - 3 Columns */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+        <Card className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-amber-50 rounded-2xl group-hover:scale-110 transition-transform">
+              <AlertCircle className="w-8 h-8 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Action Needed</p>
+              <h3 className="text-3xl font-black text-slate-900">{pendingCount} <span className="text-sm font-medium text-slate-400">Pending</span></h3>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-2xl group-hover:scale-110 transition-transform">
+              <CalendarIcon className="w-8 h-8 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Upcoming</p>
+              <h3 className="text-3xl font-black text-slate-900">{approvedCount} <span className="text-sm font-medium text-slate-400">Approved</span></h3>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-sm bg-white overflow-hidden group hover:shadow-md transition-all">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="p-3 bg-blue-50 rounded-2xl group-hover:scale-110 transition-transform">
+              <CheckCircle2 className="w-8 h-8 text-blue-500" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Success</p>
+              <h3 className="text-3xl font-black text-slate-900">{completedCount} <span className="text-sm font-medium text-slate-400">Done</span></h3>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* MAIN CONTENT GRID - 2 Columns (75/25) Naka w-full */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start w-full">
+        
+        {/* LEFT: BOOKING LIST (75% width) */}
+        <div className="xl:col-span-3 w-full">
+          <Card className="border-none shadow-sm bg-white min-h-[500px]">
+            <CardHeader className="border-b border-slate-50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 pb-4">
+              
+              {/* TABS */}
+              <div className="flex gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto shrink-0 w-full xl:w-auto">
+                {["Pending", "Approved", "Completed", "Declined"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab.toLowerCase())}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+                      activeTab === tab.toLowerCase() 
+                      ? "bg-white text-slate-900 shadow-sm" 
+                      : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
+
+              {/* SEARCH & FILTER */}
+              <div className="flex items-center gap-2 shrink-0 w-full xl:w-auto">
+                <Select value={selectedVenue} onValueChange={setSelectedVenue}>
+                  <SelectTrigger className="w-[140px] xl:w-[160px] h-9 bg-slate-50 border-none font-semibold text-slate-700 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-blue-500" />
+                      <SelectValue placeholder="All Venues" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Venues</SelectItem>
+                    <SelectItem value="Conference Hall">Conference Hall</SelectItem>
+                    <SelectItem value="Garden Pavilion">Garden Pavilion</SelectItem>
+                    <SelectItem value="Grand Ballroom">Grand Ballroom</SelectItem>
+                    <SelectItem value="Rooftop Terrace">Rooftop Terrace</SelectItem>
+                    <SelectItem value="The Milestone Event Place">The Milestone Event Place</SelectItem>
+                    <SelectItem value="Private Office">Private Office A</SelectItem>
+                    <SelectItem value="Co-working Space">Co-working Space</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div className="relative w-full xl:w-[180px]">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <Input placeholder="Search client..." className="pl-8 h-9 bg-slate-50 border-none w-full text-xs font-medium rounded-lg" />
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="overflow-x-auto w-full">
+                <table className="w-full">
+                  <thead className="bg-slate-50/50 text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 border-b border-slate-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left whitespace-nowrap">Client</th>
+                      <th className="px-6 py-4 text-left whitespace-nowrap">Event & Venue</th>
+                      <th className="px-6 py-4 text-left whitespace-nowrap">Schedule</th>
+                      <th className="px-6 py-4 text-right whitespace-nowrap">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    
+                    {filteredBookings.length > 0 ? (
+                      filteredBookings.map((booking) => (
+                        <tr key={booking.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-5">
+                            <div className="font-bold text-slate-900 whitespace-nowrap">{booking.contactName || "Unknown Client"}</div>
+                            <div className="text-xs text-slate-400 font-medium">{booking.contactPhone || booking.id.slice(0,8)}</div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="font-bold text-slate-900">{booking.eventName || "Venue Booking"}</div>
+                            <div className="text-xs text-slate-400 font-medium mt-0.5">
+                              {/* Dito kinukuha din yung fallback text */}
+                              <span className="text-blue-600 font-bold">{booking.venue || booking.venueName || "Conference Hall"}</span> • {booking.guests || 0} Guests
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm whitespace-nowrap">
+                              <CalendarIcon className="w-4 h-4" /> {booking.date}
+                            </div>
+                            <div className="text-xs text-slate-400 font-medium mt-1 whitespace-nowrap">{booking.time}</div>
+                          </td>
+                          <td className="px-6 py-5 text-right">
+                            
+                            <div className="flex justify-end items-center gap-2 whitespace-nowrap">
+                              {activeTab === 'pending' && (
+                                <>
+                                  <Button size="sm" onClick={() => handleUpdateStatus(booking.id, "confirmed")} className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm rounded-lg px-3">
+                                    <CheckCircle2 className="w-4 h-4 mr-1.5" /> Approve
+                                  </Button>
+                                  <Button size="sm" onClick={() => handleUpdateStatus(booking.id, "declined")} variant="outline" className="text-rose-500 hover:bg-rose-50 border-rose-200 hover:border-rose-300 rounded-lg px-3">
+                                    <XCircle className="w-4 h-4 mr-1.5" /> Decline
+                                  </Button>
+                                </>
+                              )}
+
+                              {activeTab === 'approved' && (
+                                <Button size="sm" onClick={() => handleUpdateStatus(booking.id, "completed")} className="bg-blue-500 hover:bg-blue-600 text-white shadow-sm rounded-lg px-3">
+                                  <CheckCircle2 className="w-4 h-4 mr-1.5" /> Mark Completed
+                                </Button>
+                              )}
+
+                              {activeTab === 'completed' && (
+                                <Badge className="bg-slate-100 text-slate-400 font-bold border-none shadow-none px-3 py-1">COMPLETED</Badge>
+                              )}
+
+                              {activeTab === 'declined' && (
+                                <Badge className="bg-rose-50 text-rose-400 font-bold border-none shadow-none px-3 py-1">DECLINED</Badge>
+                              )}
+                            </div>
+
+                          </td>
+                        </tr>
+                      ))
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* EMPTY STATE */}
+              {filteredBookings.length === 0 && (
+                <div className="py-24 text-center flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <History className="w-10 h-10 text-slate-200" />
+                  </div>
+                  <h3 className="text-slate-900 font-bold text-lg">No bookings found</h3>
+                  <p className="text-slate-400 text-sm mt-1">There are no {activeTab} reservations for {selectedVenue === "all" ? "any venue" : selectedVenue}.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      </div>
 
-      {/* ACTION AREA */}
-      <Card className="border-slate-200 shadow-sm bg-white rounded-2xl flex flex-col w-full overflow-hidden">
-        <div className="border-b border-slate-100 bg-white p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full xl:w-auto">
-            <TabsList className="bg-slate-100/80 p-1 h-9 rounded-xl flex min-w-max">
-              <TabsTrigger value="pending" className="rounded-lg text-[11px] font-bold px-3 data-[state=active]:bg-white data-[state=active]:text-amber-700 shadow-none">Pending {pendingCount > 0 && <span className="ml-1 bg-amber-500 text-white px-1.5 rounded-full">{pendingCount}</span>}</TabsTrigger>
-              <TabsTrigger value="approved" className="rounded-lg text-[11px] font-bold px-3 data-[state=active]:bg-white data-[state=active]:text-emerald-700">Approved {approvedCount > 0 && <span className="ml-1 bg-emerald-500 text-white px-1.5 rounded-full">{approvedCount}</span>}</TabsTrigger>
-              <TabsTrigger value="completed" className="rounded-lg text-[11px] font-bold px-3 data-[state=active]:bg-white data-[state=active]:text-blue-700">Completed</TabsTrigger>
-              <TabsTrigger value="declined" className="rounded-lg text-[11px] font-bold px-3 data-[state=active]:bg-white data-[state=active]:text-red-700">Declined</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="flex items-center gap-2">
-            <div className="relative w-[140px]"><Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" /><select className="pl-7 pr-2 h-9 bg-slate-50 border-slate-200 rounded-xl text-[11px] font-bold w-full outline-none" value={eventTypeFilter} onChange={(e) => setEventTypeFilter(e.target.value)}><option value="all">All Events</option><option value="wedding">Wedding</option><option value="birthday">Birthday</option></select></div>
-            <div className="relative w-[200px]"><Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" /><Input placeholder="Search..." className="pl-8 h-9 bg-slate-50 border-slate-200 rounded-xl text-[11px] w-full" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-          </div>
-        </div>
-        
-        {selectedDate && <div className="px-5 py-2 bg-indigo-50 border-b border-indigo-100 text-[10px] font-bold text-indigo-700 flex items-center gap-2"><CalendarDays className="w-3 h-3" /> Selected: {format(selectedDate, "MMMM d, yyyy")} <Button variant="ghost" className="h-4 p-0 text-[10px] text-red-500 hover:bg-transparent" onClick={() => setSelectedDate(undefined)}>Clear</Button></div>}
-
-        <Table>
-          <TableHeader className="bg-slate-50/50">
-            <TableRow><TableHead className="px-6 text-[9px] font-bold text-slate-400 uppercase">Client</TableHead><TableHead className="px-6 text-[9px] font-bold text-slate-400 uppercase">Event</TableHead><TableHead className="px-6 text-[9px] font-bold text-slate-400 uppercase">Schedule</TableHead><TableHead className="px-6 text-[9px] font-bold text-slate-400 uppercase text-right">Actions</TableHead></TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredBookings.length === 0 ? <TableRow><TableCell colSpan={4} className="h-40 text-center text-slate-400 text-xs">No records found</TableCell></TableRow> : filteredBookings.map((booking: any) => (
-              <TableRow key={booking.id} className="hover:bg-slate-50/50 border-b border-slate-50">
-                <TableCell className="px-6 py-3"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-900">{booking.contactName}</span><span className="text-[10px] text-slate-500">{booking.contactPhone}</span></div></TableCell>
-                <TableCell className="px-6 py-3"><div className="flex flex-col"><span className="text-[12px] font-bold text-slate-800">{booking.eventName}</span><span className="text-[10px] text-slate-400">{booking.guests} Guests</span></div></TableCell>
-                <TableCell className="px-6 py-3"><div className="flex flex-col"><span className="text-[11px] font-bold text-indigo-600">{booking.date}</span><span className="text-[10px] text-slate-500">{booking.time}</span></div></TableCell>
-                <TableCell className="px-6 py-3 text-right">
-                  <div className="flex justify-end gap-2">
-                    {activeTab === "pending" && <><Button size="sm" className="h-7 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700" onClick={() => handleUpdateStatus(booking.id, "approved", "Confirmed")}><CheckCircle2 className="w-3 h-3 mr-1" /> Confirm</Button><Button size="sm" variant="ghost" className="h-7 text-[10px] font-bold text-red-600 hover:bg-red-50" onClick={() => handleUpdateStatus(booking.id, "declined", "Declined")}><XCircle className="w-3 h-3 mr-1" /> Decline</Button></>}
-                    {activeTab === "approved" && <Button size="sm" className="h-7 text-[10px] font-bold bg-blue-600 hover:bg-blue-700" onClick={() => handleUpdateStatus(booking.id, "completed", "Completed")}><CheckSquare className="w-3 h-3 mr-1" /> Complete</Button>}
-                    {(activeTab === "declined" || activeTab === "completed") && <span className="text-[10px] font-bold text-slate-300 uppercase">Settled</span>}
+        {/* RIGHT: AVAILABILITY & CALENDAR */}
+        <div className="xl:col-span-1 w-full">
+          <Card className="border-none shadow-sm bg-white overflow-hidden sticky top-4">
+            <CardHeader className="bg-slate-900 text-white p-5">
+              <CardTitle className="text-sm font-bold flex items-center gap-2 uppercase tracking-wider">
+                <CalendarIcon className="w-4 h-4 text-amber-400" /> Availability
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              
+              {selectedVenue === "all" ? (
+                <div className="text-center py-8">
+                  <MapPin className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                  <p className="text-sm text-slate-500 font-medium">Please select a specific venue from the list above to view its accurate availability.</p>
+                </div>
+              ) : (
+                <>
+                  {/* CALENDAR NAVIGATION */}
+                  <div className="flex items-center justify-between mb-6">
+                    <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-full hover:bg-slate-100">
+                      <ChevronLeft className="w-4 h-4 text-slate-600" />
+                    </Button>
+                    <h3 className="font-black text-slate-800 text-sm">
+                      {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
+                    </h3>
+                    <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-full hover:bg-slate-100">
+                      <ChevronRight className="w-4 h-4 text-slate-600" />
+                    </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
+
+                  {/* TOTOONG CALENDAR GRID */}
+                  <div className="grid grid-cols-7 gap-1 text-center mb-6">
+                    {/* Headers */}
+                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(day => (
+                      <div key={day} className="text-[10px] font-bold text-slate-400 uppercase pb-2">{day}</div>
+                    ))}
+                    
+                    {/* Empty spaces para sa simula ng buwan */}
+                    {emptySlots.map((_, i) => (
+                      <div key={`empty-${i}`} className="aspect-square" />
+                    ))}
+
+                    {/* Actual Days */}
+                    {days.map((day) => {
+                      const status = getDayStatus(day);
+                      return (
+                        <div 
+                          key={day} 
+                          className={`aspect-square flex flex-col items-center justify-center text-xs font-bold rounded-lg transition-all relative
+                            ${status === "full" ? "bg-rose-50 text-rose-600 border border-rose-100" : ""}
+                            ${status === "partial" ? "bg-amber-50 text-amber-600 border border-amber-100" : ""}
+                            ${status === "none" ? "text-slate-600 hover:bg-slate-50" : ""}
+                          `}
+                        >
+                          {day}
+                          {status === "full" && <div className="w-1 h-1 bg-rose-500 rounded-full mt-0.5"></div>}
+                          {status === "partial" && <div className="w-1 h-1 bg-amber-400 rounded-full mt-0.5"></div>}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* LEGEND */}
+                  <div className="space-y-3 pt-4 border-t border-slate-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 bg-rose-500 rounded-full" />
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Fully Booked (<span className="text-red-500">&lt;6hrs left</span>)</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 bg-amber-400 rounded-full" />
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Partially Booked</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+      </div>
     </div>
   )
 }
