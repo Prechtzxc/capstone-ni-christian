@@ -4,14 +4,36 @@ import * as React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useAuth } from "@/src/modules/shared/auth/auth-context"
 import { useBookings } from "@/components/booking-context"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Plus, Clock, Users, MoveHorizontal, X, Loader2, ChevronLeft, ChevronRight, MapPin, Star } from "lucide-react"
+
+import { 
+  Calendar as CalendarIcon, 
+  Plus, 
+  Clock, 
+  Users, 
+  MoveHorizontal, 
+  X, 
+  Loader2, 
+  ChevronLeft, 
+  ChevronRight, 
+  MapPin, 
+  Star, 
+  Edit2, 
+  XCircle, 
+  Ticket, 
+  CheckCircle2,
+  Search,
+  History as HistoryIcon,
+  QrCode
+} from "lucide-react"
+
 import { ReserveDialog } from "@/components/reserve-dialog"
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 
 const dummyEventVenues = [
@@ -26,11 +48,13 @@ const dummyOfficeSpaces = [
   { id: "o2", name: "Co-working Space", capacity: 20, price: "₱200.00/hr", image: "https://images.unsplash.com/photo-1541746972996-4e0b0f93e586?w=1400", description: "Collaborative environment with great lighting.", amenities: ["AC", "Shared Pantry", "WiFi"], category: "office" },
 ]
 
-// MOCK REVIEWS DATA
 const initialReviews = [
   { id: 1, venueId: "v1", user: "Maria Clara", rating: 5, date: "May 2, 2026", comment: "Super ganda ng Conference Hall! Malamig ang AC at napakalinaw ng projector. Perfect para sa seminar namin!" },
-  { id: 2, venueId: "v1", user: "Juan Dela Cruz", rating: 4, date: "April 28, 2026", comment: "Spacious siya at maganda ang lighting. Medyo nahirapan lang kami sa parking pero overall great experience." },
-  { id: 3, venueId: "v2", user: "Anna Reyes", rating: 5, date: "April 15, 2026", comment: "Very aesthetic ang Garden Pavilion! Ang ganda ng pictures namin para sa wedding reception." },
+]
+
+const mockDemonstrationBookings = [
+  { id: "demo1", eventName: "Morning Corporate Seminar", venue: "Conference Hall", date: "June 7, 2026", time: "08:00 AM - 10:00 AM", status: "approved" },
+  { id: "demo2", eventName: "Midday Workshop", venue: "Conference Hall", date: "June 12, 2026", time: "11:00 AM - 05:00 PM", status: "approved" },
 ]
 
 export default function BookingsPage() {
@@ -38,33 +62,39 @@ export default function BookingsPage() {
   const { toast } = useToast()
   
   const { bookings, getUserBookings } = useBookings()
-  const allBookings = bookings || []
   
   const [venues, setVenues] = useState<any[]>([])
   const [isLoadingVenues, setIsLoadingVenues] = useState(true)
 
   const [showVenueModal, setShowVenueModal] = useState(false)
   const [showReserveModal, setShowReserveModal] = useState(false)
+  const [editingBooking, setEditingBooking] = useState<any>(null)
+
   const [selectedVenue, setSelectedVenue] = useState<string>("v1")
   
-  // FILTERS
   const [filterVenue, setFilterVenue] = useState<string>("all")
-  const [activeTab, setActiveTab] = useState<string>("all") 
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [activeTab, setActiveTab] = useState<string>("pending") 
+  const [searchQuery, setSearchQuery] = useState("")
 
-  // REVIEWS STATE
   const [reviewsList, setReviewsList] = useState(initialReviews)
   const [showReviewModal, setShowReviewModal] = useState(false)
   const [bookingToReview, setBookingToReview] = useState<any>(null)
   const [rating, setRating] = useState(5)
   const [comment, setComment] = useState("")
   const [showReviewsPanel, setShowReviewsPanel] = useState(false)
-  
   const [reviewedBookings, setReviewedBookings] = useState<string[]>([])
+
+  const [showTicketModal, setShowTicketModal] = useState(false)
+  const [ticketData, setTicketData] = useState<any>(null)
 
   const [bgPos, setBgPosition] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const dragStart = useRef(0)
+
+  // MOCK STATE PARA PUMASOK SA LIST YUNG TINEST MONG BOOKING LOCALLY
+  const [localBookings, setLocalBookings] = useState<any[]>([])
+
+  const allBookings = [...(bookings || []), ...mockDemonstrationBookings, ...localBookings]
 
   if (!user) return null
 
@@ -75,7 +105,6 @@ export default function BookingsPage() {
         setTimeout(() => {
           const allDummyVenues = [...dummyEventVenues, ...dummyOfficeSpaces]
           setVenues(allDummyVenues)
-          setSelectedVenue(allDummyVenues[0].id)
           setIsLoadingVenues(false)
         }, 800)
       } catch (error) {
@@ -108,9 +137,65 @@ export default function BookingsPage() {
   }
   const onDragEnd = () => setIsDragging(false)
 
-  const handleProceedToBooking = () => {
+  const handleProceedToNewBooking = () => {
     setShowVenueModal(false)
     setTimeout(() => setShowReserveModal(true), 300)
+  }
+
+  // --- ETO YUNG MAGLALAGAY SA PENDING TAB MO KAPAG NAG-SUBMIT KA SA MODAL ---
+  const handleBookingSubmit = (newBooking: any) => {
+    const matchedVenue = venues.find(v => v.id === newBooking.venueId) || venues[0];
+    const completeBooking = {
+      ...newBooking,
+      venue: matchedVenue.name,
+      venueName: matchedVenue.name
+    };
+
+    if (editingBooking) {
+      setLocalBookings(prev => {
+        const exists = prev.find(b => b.id === completeBooking.id);
+        if (exists) {
+          return prev.map(b => b.id === completeBooking.id ? completeBooking : b);
+        }
+        return [completeBooking, ...prev];
+      })
+    } else {
+      setLocalBookings(prev => [completeBooking, ...prev])
+    }
+    
+    // I-focus agad sa Pending tab para makita mo
+    setActiveTab("pending") 
+  }
+
+  // --- ETO YUNG BINAGO: PAG MODIFY PUMUPUNTA MUNA SA VIRTUAL TOUR ---
+  const handleModify = (booking: any) => {
+    if (booking.status?.toLowerCase() !== 'pending') {
+      toast({ title: "Action Denied", description: "Only pending bookings can be modified.", variant: "destructive" })
+      return
+    }
+    setEditingBooking(booking)
+
+    // Hanapin yung venue ID ng ineedit mong booking para yon ang bumukas sa Tour
+    const matchedVenue = venues.find(v => v.name.toLowerCase() === (booking.venue || booking.venueName || "").toLowerCase())
+    if (matchedVenue) {
+       setSelectedVenue(matchedVenue.id)
+    }
+
+    setShowReserveModal(false)
+    setShowVenueModal(true) // BUBUKSAN YUNG VIRTUAL TOUR!
+  }
+
+  const handleCancel = (id: string) => {
+    toast({ 
+      title: "Booking Cancelled", 
+      description: "Your pending reservation request has been cancelled.",
+      variant: "destructive"
+    })
+  }
+
+  const handleViewTicket = (booking: any) => {
+    setTicketData(booking);
+    setShowTicketModal(true);
   }
 
   const handleSubmitReview = () => {
@@ -118,9 +203,7 @@ export default function BookingsPage() {
       toast({ title: "Oops!", description: "Please write a comment before submitting.", variant: "destructive" })
       return;
     }
-
     const matchedVenue = venues.find(v => v.name.toLowerCase() === (bookingToReview?.venue || bookingToReview?.venueName || "Conference Hall").toLowerCase()) || venues[0];
-
     const newReview = {
       id: Date.now(),
       venueId: matchedVenue.id,
@@ -129,21 +212,13 @@ export default function BookingsPage() {
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       comment: comment
     }
-
     setReviewsList([newReview, ...reviewsList])
+    if (bookingToReview?.id) setReviewedBookings([...reviewedBookings, bookingToReview.id])
     
-    if (bookingToReview?.id) {
-      setReviewedBookings([...reviewedBookings, bookingToReview.id])
-    }
-
     setShowReviewModal(false)
     setComment("")
     setRating(5)
-    
-    toast({
-      title: "Review Submitted!",
-      description: "Thank you for sharing your experience. It helps us improve our services.",
-    })
+    toast({ title: "Review Submitted!", description: "Thank you for sharing your experience." })
   }
 
   const getVenueRating = (vId: string) => {
@@ -156,107 +231,23 @@ export default function BookingsPage() {
   const checkVenueMatch = (b: any, selected: string) => {
     if (selected === "all") return true;
     const uiVenue = b.venue || b.venueName || "Conference Hall";
-    const uiEvent = b.eventName || "Event Booking";
-    const combinedString = `${uiVenue} ${uiEvent}`.toLowerCase();
-    return combinedString.includes(selected.toLowerCase());
+    return uiVenue.toLowerCase().includes(selected.toLowerCase());
   }
 
-  const myRawBookings = getUserBookings(user.id)
-  
-  const myFilteredBookings = myRawBookings.filter(b => {
+  const myFilteredBookings = allBookings.filter(b => {
     const matchVenue = checkVenueMatch(b, filterVenue);
     const status = b.status?.toLowerCase() || "pending";
     let matchStatus = false;
     
-    if (activeTab === "all") {
-      matchStatus = true;
-    } else if (activeTab === "approved") {
+    if (activeTab === "approved") {
       matchStatus = (status === "confirmed" || status === "approved");
     } else {
       matchStatus = status === activeTab;
     }
 
-    return matchVenue && matchStatus;
+    const matchSearch = (b.eventName || "").toLowerCase().includes(searchQuery.toLowerCase());
+    return matchVenue && matchStatus && matchSearch;
   })
-
-  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-  
-  const emptySlots = Array.from({ length: firstDayOfMonth }).map((_, i) => null);
-  const days = Array.from({ length: daysInMonth }).map((_, i) => i + 1);
-
-  const getDayStatus = (day: number) => {
-    if (filterVenue === "all") return "none"; 
-    
-    const dayBookings = allBookings.filter(b => {
-      if (!b.date) return false;
-      try {
-        const bookingDate = new Date(b.date);
-        const isSameDate = bookingDate.getFullYear() === year && bookingDate.getMonth() === month && bookingDate.getDate() === day;
-        const isValidStatus = ["pending", "approved", "confirmed", "completed"].includes(b.status?.toLowerCase() || "pending");
-        const matchVenue = checkVenueMatch(b, filterVenue);
-        return isSameDate && isValidStatus && matchVenue;
-      } catch (e) {
-        return false;
-      }
-    });
-
-    if (dayBookings.length === 0) return "none";
-
-    const opStart = 8; 
-    const opEnd = 22;  
-    const minHoursRequired = 6; 
-
-    const parseTimeStr = (timeStr: string) => {
-      try {
-        const cleanStr = timeStr.trim().toUpperCase();
-        const isPM = cleanStr.includes('PM');
-        const isAM = cleanStr.includes('AM');
-        const timeMatch = cleanStr.match(/(\d{1,2}):(\d{2})/);
-        if (!timeMatch) return 0;
-        let hours = parseInt(timeMatch[1], 10);
-        let minutes = parseInt(timeMatch[2], 10);
-        if (isPM && hours !== 12) hours += 12;
-        if (isAM && hours === 12) hours = 0;
-        return hours + (minutes / 60);
-      } catch(e) {
-        return 0;
-      }
-    };
-
-    const intervals = dayBookings.map(b => {
-      if (!b.time) return { start: 0, end: 0 };
-      const parts = b.time.includes('-') ? b.time.split('-') : b.time.split(/to/i);
-      if (parts.length < 2) return { start: 0, end: 0 };
-      return { start: parseTimeStr(parts[0]), end: parseTimeStr(parts[1]) };
-    }).filter(i => i.start !== i.end).sort((a, b) => a.start - b.start);
-
-    let maxGap = 0;
-    let currentTime = opStart;
-
-    for (const interval of intervals) {
-      if (interval.start > currentTime) {
-        const gap = interval.start - currentTime;
-        if (gap > maxGap) maxGap = gap;
-      }
-      if (interval.end > currentTime) {
-        currentTime = interval.end;
-      }
-    }
-
-    if (opEnd > currentTime) {
-      const gap = opEnd - currentTime;
-      if (gap > maxGap) maxGap = gap;
-    }
-
-    if (maxGap < minHoursRequired) return "full";
-    return "partial";
-  }
 
   const activeVenueReviews = reviewsList.filter(r => r.venueId === activeVenueData?.id);
   const activeAvgRating = activeVenueReviews.length > 0 
@@ -264,115 +255,166 @@ export default function BookingsPage() {
     : "0";
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-500">
+    <div className="w-full p-6 lg:p-8 space-y-6 bg-slate-50/50 min-h-screen animate-in fade-in duration-500 overflow-x-hidden">
       
+      {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Bookings</h1>
           <p className="text-gray-500 mt-1">View and track the status of all your event reservations.</p>
         </div>
-        <Button className="bg-amber-600 hover:bg-amber-700 shadow-sm text-white shrink-0" onClick={() => setShowVenueModal(true)}>
+        <Button 
+          className="bg-[#f97316] hover:bg-[#ea580c] shadow-md text-white shrink-0 font-bold px-6 h-12 rounded-xl transition-transform active:scale-95" 
+          onClick={() => {
+            setEditingBooking(null); // RESET KAPAG NEW BOOKING
+            setShowVenueModal(true);
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" /> Book Another Event
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start w-full">
-        
-        {/* LEFT PANEL: BOOKINGS LIST */}
-        <div className="xl:col-span-3 w-full">
-          <Card className="border-gray-200 shadow-sm w-full">
-            <CardHeader className="flex flex-col gap-5 border-b border-gray-100 pb-4">
-              
-              {/* TOP HEADER ROW: Title & Venue Filter */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
-                <div>
-                  <CardTitle>Reservation History</CardTitle>
-                  <CardDescription>A complete list of your past and upcoming events.</CardDescription>
-                </div>
-                
-                {/* SINAGAD NA TALAGA NATIN SA PINAKAKANAN USING ml-auto AT w-full */}
-                <div className="w-full md:w-auto ml-auto">
-                  <Select value={filterVenue} onValueChange={setFilterVenue}>
-                    <SelectTrigger className="w-full md:w-[280px] bg-slate-50 border-gray-200 font-medium text-slate-700">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-amber-500" />
-                        <span className="text-gray-500 font-normal">Venue:</span>
-                        <SelectValue placeholder="All" />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Venues</SelectItem>
-                      {venues.map(v => (
-                        <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      {/* FULL WIDTH MAIN PANEL */}
+      <div className="w-full">
+        <Card className="border-gray-200 shadow-sm w-full">
+          
+          <div className="flex flex-col gap-4 border-b border-gray-100 p-6 pb-5 bg-white rounded-t-xl">
+            
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 w-full">
+              <div className="flex-1 min-w-[200px]">
+                <h3 className="text-xl font-bold text-slate-900 mb-1">Reservation History</h3>
+                <p className="text-sm text-slate-500 truncate">Your past, pending, and upcoming events.</p>
               </div>
 
-              {/* BOTTOM HEADER ROW: Status Tabs (Stretched nang pantay-pantay) */}
-              <div className="flex w-full gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto shrink-0">
-                {["All", "Pending", "Approved", "Completed", "Declined"].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab.toLowerCase())}
-                    className={`flex-1 min-w-[80px] px-3 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all whitespace-nowrap text-center ${
-                      activeTab === tab.toLowerCase() 
-                      ? "bg-white text-slate-900 shadow-sm" 
-                      : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
+              <div className="flex flex-row items-center gap-3 w-full xl:w-auto shrink-0 flex-wrap sm:flex-nowrap">
+                <Select value={filterVenue} onValueChange={setFilterVenue}>
+                  <SelectTrigger className="w-full sm:w-[220px] bg-slate-50 border-gray-200 font-medium text-slate-700 h-11 rounded-xl">
+                    <div className="flex items-center gap-2 truncate">
+                      <MapPin className="w-4 h-4 text-[#f97316] shrink-0" />
+                      <span className="text-gray-500 font-normal hidden sm:inline">Venue:</span>
+                      <SelectValue placeholder="All Venues" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Venues</SelectItem>
+                    {venues.map(v => (
+                      <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            </CardHeader>
-
-            <CardContent className="p-6">
-              {myFilteredBookings.length === 0 ? (
-                <div className="py-16 text-center flex flex-col items-center">
-                  <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mb-4">
-                    <Calendar className="h-8 w-8 text-amber-600" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900">No bookings found</h3>
-                  <p className="text-gray-500 mt-1 mb-6 max-w-sm">
-                    {filterVenue === "all" 
-                      ? (activeTab === "all" ? "You don't have any event reservations yet." : `You don't have any ${activeTab} reservations.`)
-                      : `You don't have ${activeTab === "all" ? "any" : activeTab} reservations for ${filterVenue}.`}
-                  </p>
+                <div className="relative w-full sm:w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input 
+                    placeholder="Search event..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 bg-slate-50 border-gray-200 w-full font-medium rounded-xl h-11" 
+                  />
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {myFilteredBookings.map((booking) => (
-                    <div key={booking.id} className="flex flex-col md:flex-row md:items-center justify-between p-5 border border-gray-100 rounded-lg hover:shadow-sm transition-shadow bg-white">
-                      <div className="flex items-start space-x-4">
-                        <div className="p-3 rounded-full hidden sm:flex bg-amber-50">
-                          <Calendar className="h-6 w-6 text-amber-600" />
+              </div>
+            </div>
+
+            <div className="flex w-full gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto min-w-0 mt-2">
+              {["Pending", "Approved", "Completed", "Declined"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab.toLowerCase())}
+                  className={`flex-1 min-w-[80px] px-3 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all whitespace-nowrap text-center ${
+                    activeTab === tab.toLowerCase() 
+                    ? "bg-white text-[#f97316] shadow-sm ring-1 ring-[#f97316]/20" 
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <CardContent className="p-6">
+            {myFilteredBookings.length === 0 ? (
+              <div className="py-24 text-center flex flex-col items-center justify-center">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                  <HistoryIcon className="w-10 h-10 text-slate-300" />
+                </div>
+                <h3 className="text-slate-900 font-bold text-lg">No records found</h3>
+                <p className="text-slate-400 text-sm mt-1">
+                  {searchQuery 
+                    ? `No results found for "${searchQuery}".` 
+                    : `You don't have any ${activeTab} reservations for ${filterVenue === "all" ? "any venue" : filterVenue}.`}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {myFilteredBookings.map((booking) => {
+                  const currentStatus = booking.status?.toLowerCase() || "pending";
+                  return (
+                    <div key={booking.id} className="flex flex-col lg:flex-row lg:items-center justify-between p-5 border border-gray-100 rounded-xl hover:shadow-md transition-all bg-white gap-4 group">
+                      
+                      <div className="flex items-start space-x-4 min-w-0">
+                        <div className={`p-3 rounded-full hidden sm:flex shrink-0 ${currentStatus === 'pending' ? 'bg-orange-50 text-[#f97316]' : 'bg-blue-50 text-blue-500'}`}>
+                          <CalendarIcon className="h-6 w-6" />
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 text-lg">
-                            {booking.eventName || "Event Reservation"}
-                          </h4>
-                          <div className="flex flex-wrap gap-y-1 gap-x-4 mt-1 text-sm text-gray-500">
-                            <span className="flex items-center font-medium text-slate-700">
-                              <MapPin className="w-3.5 h-3.5 mr-1 text-amber-500" /> 
-                              {booking.venue || booking.venueName || "Conference Hall"}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h4 className="font-black text-slate-900 text-lg truncate">
+                              {booking.eventName || "Event Booking"}
+                            </h4>
+                            {currentStatus === 'pending' && (
+                              <Badge className="bg-orange-100 text-[#ea580c] hover:bg-orange-100 border-none px-2 py-0.5 text-[10px] uppercase tracking-widest">Pending</Badge>
+                            )}
+                            {(currentStatus === 'approved' || currentStatus === 'confirmed') && (
+                              <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0.5 text-[10px] uppercase tracking-widest">Approved</Badge>
+                            )}
+                            {currentStatus === 'completed' && (
+                              <Badge className="bg-slate-100 text-slate-500 hover:bg-slate-100 border-none px-2 py-0.5 text-[10px] uppercase tracking-widest">Completed</Badge>
+                            )}
+                            {currentStatus === 'declined' && (
+                              <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100 border-none px-2 py-0.5 text-[10px] uppercase tracking-widest">Declined</Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-y-2 gap-x-4 mt-2 text-sm text-gray-600 font-medium">
+                            <span className="flex items-center text-[#ea580c] bg-orange-50 px-2 py-1 rounded-md shrink-0">
+                              <MapPin className="w-3.5 h-3.5 mr-1.5 shrink-0" /> 
+                              <span className="truncate">{booking.venue || booking.venueName || "Conference Hall"}</span>
                             </span>
-                            <span className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" /> {booking.date}
+                            <span className="flex items-center shrink-0 text-slate-500">
+                              <CalendarIcon className="w-3.5 h-3.5 mr-1.5 shrink-0" /> {booking.date}
                             </span>
                             {booking.time && (
-                              <span className="flex items-center">
-                                <Clock className="w-4 h-4 mr-1" /> {booking.time}
+                              <span className="flex items-center shrink-0 text-slate-500">
+                                <Clock className="w-3.5 h-3.5 mr-1.5 shrink-0" /> {booking.time}
                               </span>
                             )}
                           </div>
                         </div>
                       </div>
-                      
-                      <div className="mt-4 md:mt-0 flex flex-row items-center justify-end">
-                        {booking.status === "completed" ? (
+
+                      <div className="flex flex-row items-center justify-start lg:justify-end gap-2 border-t lg:border-t-0 pt-4 lg:pt-0 shrink-0">
+                        {currentStatus === 'pending' && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleModify(booking)} 
+                              className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 rounded-lg px-4 h-9 font-bold transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4 mr-1.5" /> Modify
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleCancel(booking.id)} 
+                              className="text-rose-500 border-rose-200 hover:bg-rose-50 hover:border-rose-300 rounded-lg px-4 h-9 font-bold transition-colors"
+                            >
+                              <XCircle className="w-4 h-4 mr-1.5" /> Cancel
+                            </Button>
+                          </>
+                        )}
+
+                        {currentStatus === 'completed' && (
                           reviewedBookings.includes(booking.id) ? (
                             <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-none shadow-none px-4 py-1.5 text-sm rounded-lg">
                               Completed
@@ -380,7 +422,7 @@ export default function BookingsPage() {
                           ) : (
                             <Button 
                               size="sm" 
-                              className="bg-amber-500 hover:bg-amber-600 text-white shadow-sm h-9 px-4 font-bold rounded-lg transition-transform hover:scale-105"
+                              className="bg-[#f97316] hover:bg-[#ea580c] text-white shadow-sm h-9 px-4 font-bold rounded-lg transition-transform hover:scale-105"
                               onClick={() => {
                                 setBookingToReview(booking);
                                 setShowReviewModal(true);
@@ -389,96 +431,18 @@ export default function BookingsPage() {
                               <Star className="w-4 h-4 mr-1.5 fill-white text-white" /> Rate & Review
                             </Button>
                           )
-                        ) : (
-                          <Badge 
-                            variant={booking.status === "confirmed" || booking.status === "approved" ? "default" : booking.status === "pending" ? "secondary" : "destructive"} 
-                            className="capitalize px-4 py-1.5 text-sm rounded-lg"
-                          >
-                            {booking.status || "Pending"}
-                          </Badge>
                         )}
                       </div>
+
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* RIGHT PANEL: AVAILABILITY CALENDAR */}
-        <div className="xl:col-span-1 w-full">
-          <Card className="border-gray-200 shadow-sm w-full sticky top-4">
-            <CardHeader className="bg-slate-900 text-white rounded-t-lg p-5">
-              <CardTitle className="text-sm font-bold flex items-center gap-2 tracking-wide uppercase">
-                <Calendar className="w-4 h-4 text-amber-400" /> Availability Check
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              
-              {filterVenue === "all" ? (
-                <div className="text-center py-8">
-                  <MapPin className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                  <p className="text-sm text-slate-500 font-medium">Please select a specific venue from the dropdown to view accurate availability.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-6">
-                    <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 rounded-full hover:bg-slate-100">
-                      <ChevronLeft className="w-4 h-4 text-slate-600" />
-                    </Button>
-                    <h3 className="font-bold text-slate-900 text-sm">
-                      {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
-                    </h3>
-                    <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 rounded-full hover:bg-slate-100">
-                      <ChevronRight className="w-4 h-4 text-slate-600" />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-7 gap-1 text-center mb-6">
-                    {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(day => (
-                      <div key={day} className="text-[10px] font-bold text-slate-400 uppercase pb-2">{day}</div>
-                    ))}
-                    
-                    {emptySlots.map((_, i) => <div key={`empty-${i}`} className="aspect-square" />)}
-
-                    {days.map((day) => {
-                      const status = getDayStatus(day);
-                      return (
-                        <div 
-                          key={day} 
-                          className={`aspect-square flex flex-col items-center justify-center text-xs font-bold rounded-lg transition-all relative
-                            ${status === "full" ? "bg-rose-50 text-rose-600 border border-rose-100" : ""}
-                            ${status === "partial" ? "bg-amber-50 text-amber-600 border border-amber-100" : ""}
-                            ${status === "none" ? "text-slate-600 hover:bg-slate-50" : ""}
-                          `}
-                        >
-                          {day}
-                          {status === "full" && <div className="w-1 h-1 bg-rose-500 rounded-full mt-0.5"></div>}
-                          {status === "partial" && <div className="w-1 h-1 bg-amber-400 rounded-full mt-0.5"></div>}
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 bg-rose-500 rounded-full" />
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Fully Booked (&lt;6hrs)</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-2.5 h-2.5 bg-amber-400 rounded-full" />
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Partially Booked</span>
-                    </div>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* REVIEW FORM MODAL */}
       <Dialog open={showReviewModal} onOpenChange={setShowReviewModal}>
         <DialogContent className="sm:max-w-[450px] p-6 bg-white rounded-2xl border-none shadow-xl">
           <div className="text-center mb-6">
@@ -505,7 +469,7 @@ export default function BookingsPage() {
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 placeholder="What did you like? What can we improve?" 
-                className="w-full flex min-h-[120px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all resize-none"
+                className="w-full flex min-h-[120px] rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#f97316] focus:border-transparent transition-all resize-none"
               />
             </div>
             
@@ -543,7 +507,7 @@ export default function BookingsPage() {
                     <Badge className="bg-white/20 text-white backdrop-blur-md border border-white/30 hidden md:inline-flex px-3 py-1">
                       360° Panoramic View
                     </Badge>
-                    <Badge className="bg-amber-600 text-white border-0 shadow-sm px-3 py-1">
+                    <Badge className="bg-[#f97316] text-white border-0 shadow-sm px-3 py-1">
                       <Users className="w-3 h-3 mr-1" /> Up to {activeVenueData.capacity}
                     </Badge>
                     <Badge className="bg-green-600 text-white border-0 shadow-sm px-3 py-1">
@@ -579,7 +543,6 @@ export default function BookingsPage() {
 
               <div className="w-full md:w-[300px] lg:w-[350px] flex-shrink-0 flex flex-col bg-slate-50 border-t md:border-t-0 md:border-l border-gray-200 overflow-hidden relative">
                 
-                {/* REVIEWS SLIDE OVERLAY */}
                 {showReviewsPanel && (
                   <div className="absolute inset-0 z-30 bg-slate-50 flex flex-col animate-in slide-in-from-right-full duration-300">
                     <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0 shadow-sm">
@@ -637,11 +600,9 @@ export default function BookingsPage() {
                   </div>
                 )}
 
-
-                {/* MAIN TOUR AREAS PANEL */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shrink-0">
                   <h3 className="font-bold text-lg text-gray-800 flex items-center">
-                    <Calendar className="w-5 h-5 mr-2 text-amber-600" />
+                    <CalendarIcon className="w-5 h-5 mr-2 text-[#f97316]" />
                     Tour Areas
                   </h3>
                   <Button
@@ -674,13 +635,13 @@ export default function BookingsPage() {
                           }}
                           className={`p-4 border rounded-xl cursor-pointer transition-all ${
                             selectedVenue === venue.id 
-                              ? 'border-amber-600 bg-amber-50 ring-1 ring-amber-600 shadow-sm' 
-                              : 'border-gray-200 hover:border-amber-300 bg-white hover:bg-gray-50'
+                              ? 'border-[#f97316] bg-orange-50 ring-1 ring-[#f97316] shadow-sm' 
+                              : 'border-gray-200 hover:border-orange-300 bg-white hover:bg-gray-50'
                           }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-amber-700' : 'text-gray-900'}`}>
+                              <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-[#ea580c]' : 'text-gray-900'}`}>
                                 {venue.name}
                               </h4>
                               <div className="text-xs mt-1 flex items-center text-gray-500">
@@ -693,9 +654,9 @@ export default function BookingsPage() {
                           </div>
                           
                           {selectedVenue === venue.id && (
-                            <div className="mt-3 pt-3 border-t border-amber-200/50 flex justify-between items-center">
+                            <div className="mt-3 pt-3 border-t border-orange-200/50 flex justify-between items-center">
                               <button 
-                                className="flex items-center text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors"
+                                className="flex items-center text-xs font-bold text-[#ea580c] hover:text-[#c2410c] transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setShowReviewsPanel(true);
@@ -705,7 +666,7 @@ export default function BookingsPage() {
                                 {ratingData.count > 0 ? `${ratingData.avg} (${ratingData.count} Reviews)` : "No reviews yet"}
                                 <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                               </button>
-                              <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" />
+                              <div className="w-2 h-2 bg-[#f97316] rounded-full animate-pulse" />
                             </div>
                           )}
                         </div>
@@ -725,13 +686,13 @@ export default function BookingsPage() {
                           }}
                           className={`p-4 border rounded-xl cursor-pointer transition-all ${
                             selectedVenue === venue.id 
-                              ? 'border-amber-600 bg-amber-50 ring-1 ring-amber-600 shadow-sm' 
-                              : 'border-gray-200 hover:border-amber-300 bg-white hover:bg-gray-50'
+                              ? 'border-[#f97316] bg-orange-50 ring-1 ring-[#f97316] shadow-sm' 
+                              : 'border-gray-200 hover:border-orange-300 bg-white hover:bg-gray-50'
                           }`}
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-amber-700' : 'text-gray-900'}`}>
+                              <h4 className={`font-semibold text-sm ${selectedVenue === venue.id ? 'text-[#ea580c]' : 'text-gray-900'}`}>
                                 {venue.name}
                               </h4>
                               <div className="text-xs mt-1 flex items-center text-gray-500">
@@ -744,9 +705,9 @@ export default function BookingsPage() {
                           </div>
                           
                           {selectedVenue === venue.id && (
-                            <div className="mt-3 pt-3 border-t border-amber-200/50 flex justify-between items-center">
+                            <div className="mt-3 pt-3 border-t border-orange-200/50 flex justify-between items-center">
                               <button 
-                                className="flex items-center text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors"
+                                className="flex items-center text-xs font-bold text-[#ea580c] hover:text-[#c2410c] transition-colors"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setShowReviewsPanel(true);
@@ -756,7 +717,7 @@ export default function BookingsPage() {
                                 {ratingData.count > 0 ? `${ratingData.avg} (${ratingData.count} Reviews)` : "No reviews yet"}
                                 <ChevronRight className="w-3.5 h-3.5 ml-0.5" />
                               </button>
-                              <div className="w-2 h-2 bg-amber-600 rounded-full animate-pulse" />
+                              <div className="w-2 h-2 bg-[#f97316] rounded-full animate-pulse" />
                             </div>
                           )}
                         </div>
@@ -781,8 +742,9 @@ export default function BookingsPage() {
                     <Button variant="outline" onClick={() => setShowVenueModal(false)} className="flex-1 rounded-lg border-gray-300 font-medium hover:bg-gray-50 text-slate-700">
                       Close
                     </Button>
-                    <Button onClick={handleProceedToBooking} className="flex-1 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white font-medium shadow-md">
-                      Book Now
+                    <Button onClick={handleProceedToNewBooking} className="flex-1 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white font-medium shadow-md">
+                      {/* DYNAMIC BUTTON TEXT DEPENDING KUNG MAY INI-EDIT KA */}
+                      {editingBooking ? "Update Booking" : "Book Now"}
                     </Button>
                   </div>
                 </div>
@@ -795,10 +757,16 @@ export default function BookingsPage() {
 
       <ReserveDialog 
         open={showReserveModal} 
-        onOpenChange={setShowReserveModal} 
+        onOpenChange={(val) => {
+           setShowReserveModal(val)
+           if(!val) setEditingBooking(null)
+        }} 
         selectedVenueId={selectedVenue}
+        editingBooking={editingBooking}
+        onSubmitSuccess={handleBookingSubmit}
         onBackToVenues={() => {
           setShowReserveModal(false);
+          // WAG CLEAR EDITING BOOKING DITO PARA HINDI MAWALA YUNG DATA PAG NAG-BACK
           setTimeout(() => {
             setShowVenueModal(true);
           }, 300);
