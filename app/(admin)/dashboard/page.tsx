@@ -1,491 +1,259 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React, { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-  Calendar,
-  Users,
-  Star,
-  FileText,
-  CheckCircle,
-  XCircle,
-  Edit,
-  RotateCcw,
-  Shield,
+import { useRouter } from "next/navigation"
+import { 
+  Calendar as CalendarIcon, 
+  LayoutDashboard,
   Clock,
-  Lock,
-  Unlock,
-  Settings,
-  Download,
-  BarChart3,
-  TrendingUp,
-  DollarSign,
-  LayoutDashboard
+  MessageSquare,
+  MapPin,
+  BellRing,
+  ArrowRight,
+  CalendarCheck
 } from "lucide-react"
 
-export default function DashboardPage() {
+export default function AdminDashboardPage() {
+  const router = useRouter()
+  const [currentTime, setCurrentTime] = useState(new Date())
+
+  // UPDATE CLOCK
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formattedDate = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(currentTime)
+
+  // MOCK DATA: PENDING REQUESTS (Action Center)
+  const pendingRequests = [
+    { id: 101, client: "Maria Clara", event: "18th Birthday", venue: "Grand Ballroom", date: "Oct 15, 2026", time: "05:00 PM - 10:00 PM", submitted: "15 mins ago" },
+    { id: 102, client: "Peter Parker", event: "Team Building", venue: "Co-working Space", date: "Sep 20, 2026", time: "09:00 AM - 03:00 PM", submitted: "1 hour ago" },
+    { id: 103, client: "John Wilson", event: "Business Meeting", venue: "Conference Hall", date: "Sep 25, 2026", time: "01:00 PM - 04:00 PM", submitted: "3 hours ago" }
+  ]
+
+  // MOCK DATA: UPCOMING APPROVED EVENTS
+  const upcomingEvents = [
+    { id: 201, client: "Anna Reyes", event: "Wedding Reception", venue: "Garden Pavilion", date: "Today", time: "06:00 PM - 11:00 PM" },
+    { id: 202, client: "ABC Corp", event: "Year-End Party", venue: "Grand Ballroom", date: "Tomorrow", time: "05:00 PM - 12:00 AM" },
+    { id: 203, client: "Sarah Geronimo", event: "Album Launch", venue: "Conference Hall", date: "May 10, 2026", time: "02:00 PM - 06:00 PM" }
+  ]
+
+  // MOCK DATA: RECENT INQUIRIES (Chat System)
+  const recentInquiries = [
+    { id: 1, name: "Juan Dela Cruz", message: "Hi, is the Garden Pavilion available next week?", time: "10m ago", unread: true },
+    { id: 2, name: "Maria Clara", message: "Thank you for approving our booking!", time: "1h ago", unread: true },
+    { id: 3, name: "Company XYZ", message: "Do you offer catering packages?", time: "3h ago", unread: false },
+    { id: 4, name: "Peter Parker", message: "Can we extend our hours?", time: "1d ago", unread: false }
+  ]
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="w-full p-6 lg:p-8 space-y-6 bg-slate-50 min-h-screen animate-in fade-in duration-500">
       
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-            <LayoutDashboard className="w-8 h-8 text-blue-600" />
-            Owner Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-1">Welcome to the One Estela Place reservation system.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="bg-white shadow-sm">
-            <Download className="h-4 w-4 mr-2" /> Export Summary
-          </Button>
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-            <Settings className="h-4 w-4 mr-2" /> Settings
-          </Button>
-        </div>
-      </div>
-
-      {/* Top KPI Cards */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="shadow-sm border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Upcoming Events</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-gray-900">12</div>
-            <p className="text-xs text-green-600 font-medium mt-1">+2 from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-l-4 border-l-purple-500 hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Bookings</CardTitle>
-            <FileText className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-gray-900">145</div>
-            <p className="text-xs text-green-600 font-medium mt-1">+24 from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Active Users</CardTitle>
-            <Users className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-gray-900">32</div>
-            <p className="text-xs text-green-600 font-medium mt-1">+3 from last month</p>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-sm border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Average Rating</CardTitle>
-            <Star className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-gray-900">4.8</div>
-            <p className="text-xs text-green-600 font-medium mt-1">+0.2 from last month</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Booking Calendar Section */}
-      <div className="mt-10 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
-            <Calendar className="h-6 w-6 text-purple-600" />
-            Booking Calendar - Venue Management
-          </h2>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="bg-white shadow-sm">
-              <Settings className="h-4 w-4 mr-2 text-gray-600" />
-              Calendar Rules
-            </Button>
-            <Button size="sm" variant="outline" className="bg-white shadow-sm">
-              <Clock className="h-4 w-4 mr-2 text-gray-600" />
-              Time Slots
-            </Button>
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 w-full">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2.5 bg-blue-600 rounded-xl shadow-sm">
+              <LayoutDashboard className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Owner Dashboard</h1>
           </div>
+          <p className="text-slate-500 font-medium">Welcome back! Here's the latest update on your bookings and inquiries.</p>
         </div>
-
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left Column: Calendar View */}
-          <div className="lg:col-span-2">
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="bg-slate-50/50 border-b border-gray-100">
-                <CardTitle className="text-lg">June 2025 - Venue Availability</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-7 gap-2 text-center text-sm">
-                  {/* Calendar Header */}
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Sun</div>
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Mon</div>
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Tue</div>
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Wed</div>
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Thu</div>
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Fri</div>
-                  <div className="font-semibold text-gray-500 pb-2 border-b border-gray-100">Sat</div>
-
-                  {/* Calendar Days (Row 1) */}
-                  <div className="p-3 text-gray-400 font-medium">1</div>
-                  <div className="p-3 text-gray-400 font-medium">2</div>
-                  <div className="p-3 text-gray-400 font-medium">3</div>
-                  <div className="p-3 text-gray-400 font-medium">4</div>
-                  <div className="p-3 text-gray-400 font-medium">5</div>
-                  <div className="p-3 text-gray-400 font-medium">6</div>
-                  <div className="p-3 text-gray-400 font-medium">7</div>
-
-                  {/* Calendar Days (Row 2) */}
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">8</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">9</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">10</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">11</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">12</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">13</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">14</div>
-
-                  {/* Calendar Days (Row 3) */}
-                  <div className="p-3 bg-red-500 text-white shadow-sm rounded-md font-bold cursor-pointer hover:bg-red-600 transition-colors">
-                    15
-                  </div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">16</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">17</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">18</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">19</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">20</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">21</div>
-
-                  {/* Calendar Days (Row 4) */}
-                  <div className="p-3 bg-red-500 text-white shadow-sm rounded-md font-bold cursor-pointer hover:bg-red-600 transition-colors">
-                    22
-                  </div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">23</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">24</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">25</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">26</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">27</div>
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">28</div>
-
-                  {/* Calendar Days (Row 5) */}
-                  <div className="p-3 text-gray-700 font-medium hover:bg-gray-50 rounded-md cursor-pointer transition-colors">29</div>
-                  <div className="p-3 bg-red-500 text-white shadow-sm rounded-md font-bold cursor-pointer hover:bg-red-600 transition-colors">
-                    30
-                  </div>
-                </div>
-
-                {/* Calendar Legend */}
-                <div className="mt-8 flex flex-wrap justify-center gap-6 text-sm bg-gray-50 py-3 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2 font-medium text-gray-700">
-                    <div className="w-4 h-4 bg-red-500 rounded shadow-sm"></div>
-                    <span>Reserved</span>
-                  </div>
-                  <div className="flex items-center gap-2 font-medium text-gray-700">
-                    <div className="w-4 h-4 bg-white border border-gray-300 rounded shadow-sm"></div>
-                    <span>Available</span>
-                  </div>
-                  <div className="flex items-center gap-2 font-medium text-gray-700">
-                    <div className="w-4 h-4 bg-yellow-400 rounded shadow-sm"></div>
-                    <span>Blocked</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column: Calendar Controls & Quick Reservations */}
-          <div className="space-y-6">
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="bg-slate-50/50 border-b border-gray-100">
-                <CardTitle className="text-lg">Availability Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6 pt-6">
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Date Management</h4>
-                  <div className="space-y-2">
-                    <Button size="sm" variant="outline" className="w-full justify-start bg-white shadow-sm border-gray-200 hover:bg-red-50 hover:text-red-700 hover:border-red-200 transition-colors">
-                      <Lock className="h-4 w-4 mr-2 text-red-500" /> Block Selected Dates
-                    </Button>
-                    <Button size="sm" variant="outline" className="w-full justify-start bg-white shadow-sm border-gray-200 hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-colors">
-                      <Unlock className="h-4 w-4 mr-2 text-green-500" /> Open Selected Dates
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Schedule Rules</h4>
-                  <div className="space-y-2">
-                    <Button size="sm" variant="outline" className="w-full justify-start bg-white shadow-sm border-gray-200">
-                      <Calendar className="h-4 w-4 mr-2 text-blue-500" /> Manage Event Schedules
-                    </Button>
-                    <Button size="sm" variant="outline" className="w-full justify-start bg-white shadow-sm border-gray-200">
-                      <Settings className="h-4 w-4 mr-2 text-gray-500" /> Booking Rules
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="bg-slate-50/50 border-b border-gray-100">
-                <CardTitle className="text-lg">Current Reservations</CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-lg">
-                    <div>
-                      <div className="font-semibold text-gray-900">Jun 15 - Wedding</div>
-                      <div className="text-gray-500 text-xs mt-0.5">Maria Santos</div>
-                    </div>
-                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-none">Reserved</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-lg">
-                    <div>
-                      <div className="font-semibold text-gray-900">Jun 22 - Corporate</div>
-                      <div className="text-gray-500 text-xs mt-0.5">Tech Solutions</div>
-                    </div>
-                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-none">Reserved</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-red-50 border border-red-100 rounded-lg">
-                    <div>
-                      <div className="font-semibold text-gray-900">Jun 30 - Birthday</div>
-                      <div className="text-gray-500 text-xs mt-0.5">John Miller</div>
-                    </div>
-                    <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-none shadow-none">Reserved</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        
+        <div className="flex items-center shrink-0">
+          <Badge variant="outline" className="bg-white px-5 py-2.5 text-sm font-bold text-slate-600 shadow-sm border-gray-200 rounded-xl flex items-center gap-2">
+            <CalendarIcon className="w-4 h-4 text-blue-500" />
+            {formattedDate}
+          </Badge>
         </div>
       </div>
 
-      {/* Recent Bookings Table */}
-      <div className="mt-10">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Bookings</h2>
-        <Card className="shadow-sm border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-gray-600 font-semibold border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4">Event</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Client</th>
-                  <th className="px-6 py-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Wedding Reception</td>
-                  <td className="px-6 py-4 text-gray-600">Jun 15, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Maria Santos</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Confirmed
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Corporate Seminar</td>
-                  <td className="px-6 py-4 text-gray-600">Jun 22, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Tech Solutions Inc.</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      Pending
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Birthday Party</td>
-                  <td className="px-6 py-4 text-gray-600">Jun 30, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">John Miller</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Confirmed
-                    </span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Charity Gala</td>
-                  <td className="px-6 py-4 text-gray-600">Jul 05, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Hope Foundation</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      New Request
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </div>
-
-      {/* Owner Controls Table */}
-      <div className="mt-12 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900">
-            <Shield className="h-6 w-6 text-blue-600" />
-            Booking Management - Owner Controls
-          </h2>
-          <div className="text-sm font-medium text-red-500 bg-red-50 px-3 py-1 rounded-full border border-red-100">
-            Final Authority Override Active
-          </div>
-        </div>
-
-        <Card className="shadow-sm border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-gray-600 font-semibold border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4">Event</th>
-                  <th className="px-6 py-4">Date</th>
-                  <th className="px-6 py-4">Client</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4">Manager Decision</th>
-                  <th className="px-6 py-4 text-right">Owner Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Wedding Reception</td>
-                  <td className="px-6 py-4 text-gray-600">Jun 15, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Maria Santos</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Confirmed</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-medium text-green-600">Approved</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:border-blue-200">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-amber-600 hover:border-amber-200">
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Corporate Seminar</td>
-                  <td className="px-6 py-4 text-gray-600">Jun 22, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Tech Solutions Inc.</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending Review</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-gray-500 italic">Awaiting Decision</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50">
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50">
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:border-blue-200">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Birthday Party</td>
-                  <td className="px-6 py-4 text-gray-600">Jun 30, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">John Miller</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Confirmed</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-medium text-green-600">Approved</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:border-blue-200">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-amber-600 hover:border-amber-200">
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Charity Gala</td>
-                  <td className="px-6 py-4 text-gray-600">Jul 05, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Hope Foundation</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Manager Denied</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-medium text-red-600">Denied - Conflict</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" className="h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-                        <Shield className="h-3 w-3 mr-2" /> Override
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:border-blue-200">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-medium text-gray-900">Product Launch</td>
-                  <td className="px-6 py-4 text-gray-600">Jul 12, 2025</td>
-                  <td className="px-6 py-4 text-gray-600">Innovation Corp</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">New Request</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-gray-500 italic">Pending Review</span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 border-green-200 hover:bg-green-50">
-                        <CheckCircle className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 border-red-200 hover:bg-red-50">
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                      <Button size="icon" variant="outline" className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:border-blue-200">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Table Footer Legend */}
-          <div className="bg-gray-50 border-t border-gray-200 p-4">
-            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 font-medium">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" /> <span>Approve</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <XCircle className="h-4 w-4 text-red-600" /> <span>Deny</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Edit className="h-4 w-4 text-gray-500" /> <span>Reschedule/Edit</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-blue-600" /> <span>Override Manager</span>
+      {/* TOP STATS CARDS - Ginawa ko ng 3 columns para sakop ang 100% width! */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+        
+        {/* CLICKABLE CARD: PENDING APPROVALS */}
+        <Card 
+          onClick={() => router.push('/dashboard/bookings')}
+          className="border-none shadow-sm bg-gradient-to-br from-white to-amber-50/30 overflow-hidden relative cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all group"
+        >
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-amber-500"></div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Pending Approvals</p>
+              <div className="p-2.5 bg-amber-100/50 rounded-xl text-amber-600 group-hover:scale-110 transition-transform">
+                <BellRing className="w-5 h-5" />
               </div>
             </div>
-          </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <h3 className="text-4xl font-black text-slate-900 mb-1">{pendingRequests.length}</h3>
+                <p className="text-sm font-bold text-amber-600">Action required</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-amber-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </CardContent>
         </Card>
+
+        {/* CLICKABLE CARD: UPCOMING EVENTS */}
+        <Card 
+          onClick={() => router.push('/dashboard/bookings')}
+          className="border-none shadow-sm bg-gradient-to-br from-white to-blue-50/30 overflow-hidden relative cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all group"
+        >
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Events Today</p>
+              <div className="p-2.5 bg-blue-100/50 rounded-xl text-blue-600 group-hover:scale-110 transition-transform">
+                <CalendarCheck className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <h3 className="text-4xl font-black text-slate-900 mb-1">{upcomingEvents.length}</h3>
+                <p className="text-sm font-bold text-blue-600">Approved bookings</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-blue-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* CLICKABLE CARD: UNREAD MESSAGES */}
+        <Card 
+          onClick={() => router.push('/dashboard/chat')}
+          className="border-none shadow-sm bg-gradient-to-br from-white to-indigo-50/30 overflow-hidden relative cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all group"
+        >
+          <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Inquiries</p>
+              <div className="p-2.5 bg-indigo-100/50 rounded-xl text-indigo-600 group-hover:scale-110 transition-transform">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <h3 className="text-4xl font-black text-slate-900 mb-1">{recentInquiries.filter(i => i.unread).length}</h3>
+                <p className="text-sm font-bold text-indigo-600">Unread messages</p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-indigo-400 mb-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          </CardContent>
+        </Card>
+
       </div>
 
+      {/* MAIN SECTION - TWO COLUMNS */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start w-full">
+        
+        {/* LEFT COLUMN: BOOKINGS MANAGEMENT */}
+        <div className="xl:col-span-2 space-y-6">
+          
+          {/* ACTION CENTER - PENDING BOOKINGS */}
+          <Card className="border border-amber-200/60 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="border-b border-amber-50 pb-4 flex flex-row items-center justify-between bg-amber-50/30">
+              <div>
+                <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <BellRing className="w-5 h-5 text-amber-500" /> Action Center
+                </CardTitle>
+                <CardDescription className="text-amber-700/70 font-medium">Booking submissions needing your approval.</CardDescription>
+              </div>
+              <Button 
+                size="sm"
+                onClick={() => router.push('/dashboard/bookings')}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-sm"
+              >
+                View All Bookings <ArrowRight className="w-4 h-4 ml-1.5" />
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-50">
+                {pendingRequests.map((req) => (
+                  <div key={req.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors">
+                    <div className="flex items-start sm:items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center font-black text-amber-600 text-sm border border-amber-100 shrink-0">
+                        {req.client.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">{req.client}</h4>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-slate-500 mt-0.5">
+                          <span className="flex items-center text-blue-600 font-bold">
+                            <MapPin className="w-3 h-3 mr-1" /> {req.venue}
+                          </span>
+                          <span className="flex items-center">
+                            <CalendarIcon className="w-3 h-3 mr-1" /> {req.date}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+                      <span className="text-xs font-bold text-amber-600 flex items-center">
+                        <Clock className="w-3 h-3 mr-1" /> {req.submitted}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT COLUMN: RECENT INQUIRIES (CHAT) */}
+        <div className="xl:col-span-1">
+          <Card className="border-none shadow-sm bg-white overflow-hidden h-full">
+            <CardHeader className="border-b border-slate-50 pb-4 bg-white flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-indigo-500" /> Recent Inquiries
+                </CardTitle>
+                <CardDescription>Messages from clients.</CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-50">
+                {recentInquiries.map((chat) => (
+                  <div key={chat.id} className={`p-4 flex items-start gap-3 hover:bg-slate-50 transition-colors cursor-pointer ${chat.unread ? 'bg-indigo-50/30' : ''}`} onClick={() => router.push('/dashboard/chat')}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${chat.unread ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                      {chat.name.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <h4 className={`text-sm truncate ${chat.unread ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>{chat.name}</h4>
+                        <span className={`text-[10px] whitespace-nowrap ${chat.unread ? 'font-bold text-indigo-600' : 'text-slate-400'}`}>{chat.time}</span>
+                      </div>
+                      <p className={`text-xs truncate ${chat.unread ? 'font-medium text-slate-800' : 'text-slate-500'}`}>
+                        {chat.message}
+                      </p>
+                    </div>
+                    {chat.unread && (
+                      <div className="w-2 h-2 rounded-full bg-indigo-600 mt-1.5 shrink-0"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="p-4 border-t border-slate-50">
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push('/dashboard/chat')}
+                  className="w-full text-xs font-bold text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+                >
+                  View All Inquiries <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+      </div>
     </div>
   )
 }
